@@ -1,4 +1,4 @@
-package bentigorlich.de.littlehelper1;
+package bentigorlich.de.littlehelper;
 
 import android.content.Context;
 import android.support.test.InstrumentationRegistry;
@@ -21,6 +21,6 @@ public class ExampleInstrumentedTest {
         // Context of the app under test.
         Context appContext = InstrumentationRegistry.getTargetContext();
 
-        assertEquals("bentigorlich.de.littlehelper1", appContext.getPackageName());
+        assertEquals("bentigorlich.de.littlehelper", appContext.getPackageName());
     }
 }

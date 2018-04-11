@@ -1,4 +1,4 @@
-package bentigorlich.de.littlehelper1;
+package bentigorlich.de.littlehelper;
 
 import android.content.res.Configuration;
 import android.os.Bundle;

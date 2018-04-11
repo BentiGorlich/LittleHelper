@@ -3,7 +3,7 @@ apply plugin: 'com.android.application'
 android {
     compileSdkVersion 27
     defaultConfig {
-        applicationId "bentigorlich.de.littlehelper1"
+        applicationId "bentigorlich.de.littlehelper"
         minSdkVersion 24
         targetSdkVersion 27
         versionCode 1

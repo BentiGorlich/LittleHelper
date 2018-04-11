@@ -1,4 +1,4 @@
-package bentigorlich.de.littlehelper1;
+package bentigorlich.de.littlehelper;
 
 import org.junit.Test;
 
