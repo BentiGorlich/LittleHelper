@@ -24,7 +24,6 @@ public class MainActivity extends AppCompatActivity {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         Log.i("main","started");
-        startService(new Intent(this, NotificationListener2.class));
 
         mEdit = findViewById(R.id.noteText);
         btn = findViewById(R.id.sendNote);
