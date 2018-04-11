@@ -1,5 +1,6 @@
 package bentigorlich.de.littlehelper;
 
+import android.app.Notification;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.app.NotificationCompat;
@@ -15,6 +16,7 @@ public class MainActivity extends AppCompatActivity {
 
     EditText mEdit;
     Button btn;
+    Button start;
     int id = 0;
 
     @Override
@@ -27,7 +29,9 @@ public class MainActivity extends AppCompatActivity {
 
         mEdit = findViewById(R.id.noteText);
         btn = findViewById(R.id.sendNote);
+        start = findViewById(R.id.start);
         btn.setOnClickListener(this::sendNotification);
+        start.setOnClickListener(this::startListener);
     }
 
     public void sendNotification(View view){
@@ -43,6 +47,10 @@ public class MainActivity extends AppCompatActivity {
         manager.notify(id, builder.build());
         Log.i("main", "sent Notification");
         id++;
+    }
+    public void startListener(View view){
+        Intent start = new Intent(this, NotificationListener.class);
+        startService(start);
     }
 
 }

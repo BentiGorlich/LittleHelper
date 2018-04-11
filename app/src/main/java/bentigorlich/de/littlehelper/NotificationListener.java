@@ -1,6 +1,7 @@
 package bentigorlich.de.littlehelper;
 
 import android.app.Notification;
+import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -12,6 +13,8 @@ import android.provider.Settings;
 import android.service.notification.NotificationListenerService;
 import android.service.notification.StatusBarNotification;
 import android.speech.tts.TextToSpeech;
+import android.support.v4.app.NotificationCompat;
+import android.support.v4.app.NotificationManagerCompat;
 import android.util.Log;
 
 import com.vdurmont.emoji.EmojiParser;
@@ -32,39 +35,46 @@ public class NotificationListener extends NotificationListenerService implements
     private boolean connected = false;
     private boolean ttsInit = false;
     private boolean isHeadsetPluggedIn = false;
+    private boolean isRunning = true;
 
     //all the last notifications
     private ArrayList<StatusBarNotification> notifications = new ArrayList<>();
 
-    private int speechID = 0;
     private TextToSpeech mtts;
     private CustomReceiver receiver = new CustomReceiver();
+    private Intent STOP_INTENT;
+    private PendingIntent STOP_PENDING_INTENT;
 
-    private static boolean running = false;
+    private static boolean running = true;
 
     @Override
     public void onCreate() {
-        if(running){
-            this.stopSelf();
-        }
-        running = true;
         super.onCreate();
-        System.out.println("NotificationListener has started");
-
-        boolean hasPermission = false;
         if(checkCallingPermission("android.service.notification.NotificationListenerService") == PackageManager.PERMISSION_DENIED){
-            hasPermission = false;
+            boolean hasPermission = false;
+            Log.i(TAG, "Permission to read notifications: " + String.valueOf(hasPermission));
             Intent intent = new Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS);
             startActivity(intent);
-        }else if(checkCallingPermission("android.service.notification.NotificationListenerService") == PackageManager.PERMISSION_GRANTED){
-            hasPermission = true;
         }
 
-        Log.i(TAG, "Permission to read notifications: " + String.valueOf(hasPermission));
+        System.out.println("NotificationListener has started");
+
+        STOP_INTENT = new Intent(this, CustomReceiver.class);
+        STOP_INTENT.setAction("bentigorlich.de.TOGGLE_LISTENER");
+        STOP_PENDING_INTENT = PendingIntent.getBroadcast(this, 0, STOP_INTENT, 0);
+
+        updateNotifications();
+
+        Log.i("main", "sent Notification");
+
         mtts = new TextToSpeech(this, this);
         mtts.setLanguage(Locale.GERMAN);
 
-        this.registerReceiver(receiver, new IntentFilter(AudioManager.ACTION_HEADSET_PLUG));
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(AudioManager.ACTION_HEADSET_PLUG);
+        filter.addAction(STOP_INTENT.getAction());
+
+        this.registerReceiver(receiver, filter);
     }
 
     @Override
@@ -82,6 +92,7 @@ public class NotificationListener extends NotificationListenerService implements
     public void onListenerConnected() {
         connected = true;
         System.out.println("Listener is connected");
+        this.startService(new Intent(this, this.getClass()));
     }
 
     @Override
@@ -93,7 +104,7 @@ public class NotificationListener extends NotificationListenerService implements
     @Override
     public void onNotificationPosted(StatusBarNotification note) {
         try{
-            if(connected && ttsInit && isHeadsetPluggedIn){
+            if(connected && ttsInit && isHeadsetPluggedIn && isRunning){
                 readNotification(note);
             }
         } catch (NullPointerException e){}
@@ -131,7 +142,7 @@ public class NotificationListener extends NotificationListenerService implements
     }
 
     private void readNotification(StatusBarNotification note){
-        if(!checkReplicate(note)) {
+        if(!checkReplicate(note) && !note.getPackageName().equals(this.getPackageName())) {
             String title = note.getNotification().extras.getCharSequence(Notification.EXTRA_TITLE).toString();
             String text = note.getNotification().extras.getCharSequence(Notification.EXTRA_TEXT).toString();
             String toRead = title + " " + text;
@@ -148,19 +159,50 @@ public class NotificationListener extends NotificationListenerService implements
         ttsInit = true;
     }
 
+    private void updateNotifications(){
+        Log.i(TAG, "notifications got updated");
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this);
+
+        if(isRunning){
+            builder.setContentTitle("Notification Listener is running.");
+            builder.setContentText("click to stop");
+            builder.addAction(R.drawable.ic_notifications_black_24dp, "stop listener", STOP_PENDING_INTENT);
+        }else{
+            builder.setContentTitle("Notification Listener stopped.");
+            builder.setContentText("click to start");
+            builder.addAction(R.drawable.ic_notifications_black_24dp, "start listener", STOP_PENDING_INTENT);
+        }
+
+        builder.setCategory("Information");
+        builder.setAutoCancel(false);
+        builder.setContentIntent(STOP_PENDING_INTENT);
+        builder.setPriority(NotificationCompat.PRIORITY_DEFAULT);
+        builder.setSmallIcon(R.drawable.ic_notifications_black_24dp);
+        NotificationManagerCompat manager = NotificationManagerCompat.from(this);
+        manager.notify(0, builder.build());
+    }
+
     protected class CustomReceiver extends BroadcastReceiver {
 
         @Override
         public void onReceive(Context context, Intent intent) {
-            if(intent.getAction().equals(AudioManager.ACTION_HEADSET_PLUG)){
-                if(intent.getIntArrayExtra("state") != null) {
-                    if (intent.getIntArrayExtra("state")[0] == 1) {
+            try {
+                if (intent.getAction().equals(AudioManager.ACTION_HEADSET_PLUG)) {
+                    if (intent.getIntExtra("state", 0) == 1) {
                         isHeadsetPluggedIn = true;
                     } else {
                         isHeadsetPluggedIn = false;
                     }
+                } else if (intent.getAction().equals(STOP_INTENT.getAction())) {
+                    if (isRunning) {
+                        isRunning = false;
+                        updateNotifications();
+                    } else {
+                        isRunning = true;
+                        updateNotifications();
+                    }
                 }
-            }
+            }catch(NullPointerException e){}
         }
     }
 
