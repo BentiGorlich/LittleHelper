@@ -5,15 +5,27 @@
 
     <!-- Example General settings -->
     <string name="pref_header_general">General</string>
+    <string name="pref_header_apps">Apps</string>
 
     <string name="pref_always_on">Always On</string>
     <string name="pref_always_on_description">Notifications will always be read out</string>
+    <string name="key_always_on">always_on</string>
 
     <string name="pref_headphones_on">Headphones</string>
     <string name="pref_headphones_on_description">Notifications will be read out when headphones are plugged in</string>
+    <string name="key_headphones_on">headphones_on</string>
 
     <string name="pref_headset_on">Headset</string>
     <string name="pref_headset_on_description">Notifications will be read out when a headset is plugged in</string>
+    <string name="key_headset_on">headset_on</string>
+
+    <!-- OTHERS -->
+
     <string name="title_activity_main">MainActivity</string>
+    <string name="action_refresh">Refresh</string>
+    <string name="action_settings">Settings</string>
+    <string name="title_activity_child">ChildActivity</string>
+    <string name="permission_granted">Permission granted</string>
+    <string name="permission_denied">Permission denied</string>
 
 </resources>

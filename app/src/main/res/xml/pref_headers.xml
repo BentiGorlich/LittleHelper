@@ -3,8 +3,12 @@
     <!-- These settings headers are only used on tablets. -->
 
     <header
-        android:fragment="bentigorlich.de.littlehelper.SettingsActivity$GeneralPreferenceFragment"
+        android:fragment="bentigorlich.de.littlehelper.SettingsActivity$GeneralFragment"
         android:icon="@drawable/ic_info_black_24dp"
         android:title="@string/pref_header_general" />
+    <header
+        android:fragment="bentigorlich.de.littlehelper.SettingsActivity$AppsFragment"
+        android:icon="@drawable/ic_notifications_black_24dp"
+        android:title="@string/pref_header_apps" />
 
 </preference-headers>

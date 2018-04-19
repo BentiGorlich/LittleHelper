@@ -1,22 +1,27 @@
 package bentigorlich.de.littlehelper;
 
-import android.app.Notification;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.os.Bundle;
-import android.support.v4.app.NotificationCompat;
-import android.support.v4.app.NotificationManagerCompat;
+import android.provider.Settings;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
-import android.widget.EditText;
+import android.widget.TextView;
+
+import static android.content.ContentValues.TAG;
 
 public class MainActivity extends AppCompatActivity {
 
-    EditText mEdit;
-    Button btn;
-    Button start;
+	TextView status;
+	Button btn_start;
+	Button btn_kill;
+	Button btn_fix;
     int id = 0;
 
     @Override
@@ -25,32 +30,69 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-        Log.i("main","started");
+		Log.i("toolbar", "started");
 
-        mEdit = findViewById(R.id.noteText);
-        btn = findViewById(R.id.sendNote);
-        start = findViewById(R.id.start);
-        btn.setOnClickListener(this::sendNotification);
-        start.setOnClickListener(this::startListener);
-    }
+		status = (TextView) findViewById(R.id.status_text);
+		btn_start = (Button) findViewById(R.id.start_btn);
+		btn_fix = (Button) findViewById(R.id.fix_btn);
+		btn_kill = (Button) findViewById(R.id.kill_btn);
 
-    public void sendNotification(View view){
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(this);
-        builder.setContentText(mEdit.getText());
-        builder.setCategory("Test");
-        builder.setAutoCancel(true);
-        builder.setContentTitle("new Notification");
-        builder.setContentIntent(null);
-        builder.setPriority(NotificationCompat.PRIORITY_DEFAULT);
-        builder.setSmallIcon(R.drawable.ic_notifications_black_24dp);
-        NotificationManagerCompat manager = NotificationManagerCompat.from(this);
-        manager.notify(id, builder.build());
-        Log.i("main", "sent Notification");
-        id++;
-    }
-    public void startListener(View view){
-        Intent start = new Intent(this, NotificationListener.class);
-        startService(start);
-    }
+		btn_fix.setOnClickListener(v -> {
+			Intent intent = new Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS);
+			startActivity(intent);
+		});
 
+		btn_kill.setOnClickListener(v -> {
+			stopService(new Intent(this, NotificationListener.class));
+		});
+
+		btn_start.setOnClickListener(v -> {
+			startService(new Intent(this, NotificationListener.class));
+		});
+
+		refresh();
+
+	}
+
+	private void refresh() {
+		boolean hasPermission = NotificationListener.connected;
+		Log.i(TAG, "Permission to read notifications: " + String.valueOf(hasPermission));
+		if (hasPermission) {
+			btn_fix.setVisibility(View.INVISIBLE);
+			status.setText(R.string.permission_granted);
+			status.setTextColor(Color.GREEN);
+		} else {
+			btn_fix.setVisibility(View.VISIBLE);
+			status.setText(R.string.permission_denied);
+			status.setTextColor(Color.RED);
+		}
+	}
+
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+		// Inflate the menu; this adds items to the action bar if it is present.
+		getMenuInflater().inflate(R.menu.toolbar, menu);
+		return true;
+	}
+
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		// Handle action bar item clicks here. The action bar will
+		// automatically handle clicks on the Home/Up button, so long
+		// as you specify a parent activity in AndroidManifest.xml.
+		int id = item.getItemId();
+
+		//noinspection SimplifiableIfStatement
+		switch (id) {
+			case R.id.action_settings:
+				Intent startSettings = new Intent(this, SettingsActivity.class);
+				startActivity(startSettings);
+				break;
+			case R.id.action_refresh:
+				refresh();
+				break;
+		}
+
+		return super.onOptionsItemSelected(item);
+    }
 }

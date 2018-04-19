@@ -2,18 +2,17 @@
 
     <SwitchPreference
         android:defaultValue="false"
-        android:key="always_on"
+        android:key="@string/key_always_on"
         android:summary="@string/pref_always_on_description"
         android:title="@string/pref_always_on" />
     <SwitchPreference
         android:defaultValue="true"
-        android:key="headphones_on"
+        android:key="@string/key_headphones_on"
         android:summary="@string/pref_headphones_on_description"
         android:title="@string/pref_headphones_on" />
     <SwitchPreference
         android:defaultValue="true"
-        android:key="headset_on"
-        android:persistent="false"
+        android:key="@string/key_headset_on"
         android:summary="@string/pref_headset_on_description"
         android:title="@string/pref_headset_on" />
 
