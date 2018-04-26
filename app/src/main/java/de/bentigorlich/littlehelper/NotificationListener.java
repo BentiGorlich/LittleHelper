@@ -54,12 +54,14 @@ public class NotificationListener extends NotificationListenerService implements
     private boolean isBluetoothPluggedIn = false;
     private boolean isMicPluggedIn = false;
     private boolean isRunning = true;
-    private boolean hasAudioFocus = false;
 
     //all the last notifications
     private ArrayList<StatusBarNotification> notifications = new ArrayList<>();
 
     private TextToSpeech mtts;
+    private AudioChangeListener acl = new AudioChangeListener();
+
+    //broadcast receiver
     private HeadsetPlugReceiver receiver_headset = new HeadsetPlugReceiver();
     private BluetoothConnectReceiver receiver_bluetooth = new BluetoothConnectReceiver();
     private NotificationButtonListener receiver_notification = new NotificationButtonListener();
@@ -100,6 +102,8 @@ public class NotificationListener extends NotificationListenerService implements
         removeNotification();
         unregisterReceiver(this.receiver_notification);
         unregisterReceiver(this.receiver_headset);
+        unregisterReceiver(this.receiver_bluetooth);
+        abandonAudioFocus();
         super.onDestroy();
     }
 
@@ -195,7 +199,7 @@ public class NotificationListener extends NotificationListenerService implements
 
     private void readNotification(StatusBarNotification note) {
         if (!checkReplicate(note)) {
-            if (!hasAudioFocus) {
+            if (!acl.hasAudioFocus()) {
                 requestAudioFocus();
             }
             String title = note.getNotification().extras.getCharSequence(Notification.EXTRA_TITLE).toString();
@@ -210,35 +214,16 @@ public class NotificationListener extends NotificationListenerService implements
 
     @TargetApi(Build.VERSION_CODES.N)
     private void requestAudioFocus() {
+        Log.i(TAG, "Requested Audio Focus");
         AudioManager am = (AudioManager) this.getApplicationContext().getSystemService(Context.AUDIO_SERVICE);
-        am.requestAudioFocus(this::onAudioFocusChange, AudioAttributes.CONTENT_TYPE_SPEECH, AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK);
+        am.requestAudioFocus(acl, AudioAttributes.CONTENT_TYPE_SPEECH, AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK);
     }
 
     @TargetApi(Build.VERSION_CODES.N)
-    private void abondonAudioFocus() {
+    private void abandonAudioFocus() {
+        Log.i(TAG, "abandoned audio focus");
         AudioManager am = (AudioManager) this.getApplicationContext().getSystemService(Context.AUDIO_SERVICE);
-        am.abandonAudioFocus(this::onAudioFocusChange);
-    }
-
-    private void onAudioFocusChange(int i) {
-        switch (i) {
-            case AUDIOFOCUS_GAIN:
-                hasAudioFocus = true;
-                Log.i(TAG, "gained audio focus");
-                break;
-            case AUDIOFOCUS_LOSS:
-                hasAudioFocus = false;
-                Log.i(TAG, "lost audio focus");
-                break;
-            case AUDIOFOCUS_LOSS_TRANSIENT:
-                hasAudioFocus = false;
-                Log.i(TAG, "lost audio focus");
-                break;
-            case AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK:
-                hasAudioFocus = false;
-                Log.i(TAG, "lost audio focus");
-                break;
-        }
+        am.abandonAudioFocus(acl);
     }
 
     @Override
@@ -368,6 +353,9 @@ public class NotificationListener extends NotificationListenerService implements
                 if (intent.getAction().equals(STOP_INTENT_ACTION)) {
                     Log.i(TAG, "Notification Button got clicked");
                     isRunning = !isRunning;
+                    if (!isRunning) {
+                        abandonAudioFocus();
+                    }
                 }
                 updateNotifications();
             } catch (NullPointerException e) {
@@ -384,12 +372,43 @@ public class NotificationListener extends NotificationListenerService implements
                 Log.i(TAG, intent.getAction());
                 if (intent.getAction().equals(ACTION_TTS_QUEUE_PROCESSING_COMPLETED)) {
                     Log.i(TAG, "TTS is done");
-                    abondonAudioFocus();
+                    abandonAudioFocus();
                 }
                 updateNotifications();
             } catch (NullPointerException e) {
                 e.printStackTrace();
             }
+        }
+    }
+
+    private class AudioChangeListener implements AudioManager.OnAudioFocusChangeListener {
+
+        private boolean hasAudioFocus = false;
+
+        @Override
+        public void onAudioFocusChange(int focusChange) {
+            switch (focusChange) {
+                case AUDIOFOCUS_GAIN:
+                    hasAudioFocus = true;
+                    Log.i(TAG, "gained audio focus");
+                    break;
+                case AUDIOFOCUS_LOSS:
+                    hasAudioFocus = false;
+                    Log.i(TAG, "lost audio focus");
+                    break;
+                case AUDIOFOCUS_LOSS_TRANSIENT:
+                    hasAudioFocus = false;
+                    Log.i(TAG, "lost audio focus transient");
+                    break;
+                case AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK:
+                    hasAudioFocus = false;
+                    Log.i(TAG, "lost audio focus transient but can duck");
+                    break;
+            }
+        }
+
+        boolean hasAudioFocus() {
+            return hasAudioFocus;
         }
     }
 }
