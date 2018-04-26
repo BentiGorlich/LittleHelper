@@ -15,12 +15,10 @@
         android:key="@string/key_headset_on"
         android:summary="@string/pref_headset_on_description"
         android:title="@string/pref_headset_on" />
-
-    <!-- NOTE: EditTextPreference accepts EditText attributes. -->
-    <!-- NOTE: EditTextPreference's summary should be set to its value by the activity code. -->
-
-    <!-- NOTE: Hide buttons to simplify the UI. Users can touch outside the dialog to
-         dismiss it. -->
-    <!-- NOTE: ListPreference's summary should be set to its value by the activity code. -->
+    <SwitchPreference
+        android:defaultValue="true"
+        android:key="@string/key_bluetooth_on"
+        android:summary="@string/pref_bluetooth_on_description"
+        android:title="@string/pref_bluetooth_on" />
 
 </PreferenceScreen>

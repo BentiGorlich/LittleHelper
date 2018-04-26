@@ -1,16 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    package="bentigorlich.de.littlehelper">
+    package="de.bentigorlich.littlehelper"
+    android:versionName="@string/version">
 
+    <uses-permission android:name="android.permission.BLUETOOTH" />
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:supportsRtl="true"
+        android:permission="android.permission.BLUETOOTH"
         android:theme="@style/AppTheme.PopupOverlay">
+
         <activity
-            android:name=".MainActivity"
+            android:name="de.bentigorlich.littlehelper.MainActivity"
             android:label="@string/app_name"
             android:theme="@style/AppTheme.NoActionBar">
             <intent-filter>
@@ -21,13 +25,13 @@
         </activity>
 
         <activity
-            android:name=".SettingsActivity"
+            android:name="de.bentigorlich.littlehelper.SettingsActivity"
             android:label="@string/app_name"
-            android:parentActivityName=".MainActivity"
+            android:parentActivityName="de.bentigorlich.littlehelper.MainActivity"
             android:theme="@style/Theme.AppCompat.Light" />
 
         <service
-            android:name=".NotificationListener"
+            android:name="de.bentigorlich.littlehelper.NotificationListener"
             android:exported="false"
             android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
             <intent-filter>

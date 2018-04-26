@@ -18,7 +18,7 @@
             android:id="@+id/textView2"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Status:" />
+            android:text="@string/status" />
 
         <TextView
             android:id="@+id/status_text"
@@ -34,7 +34,7 @@
             android:id="@+id/fix_btn"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Fix it"
+            android:text="@string/fix_btn"
             android:textAlignment="textEnd" />
 
         <Space
@@ -45,12 +45,12 @@
             android:id="@+id/start_btn"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Start Listener" />
+            android:text="@string/start_btn" />
 
         <Button
             android:id="@+id/kill_btn"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Kill Listener" />
+            android:text="@string/kill_btn" />
     </LinearLayout>
 </ScrollView>
