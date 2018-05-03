@@ -23,6 +23,16 @@
     <string name="pref_bluetooth_on">Bluetooth Headset</string>
     <string name="pref_bluetooth_on_description">Notifications will be read out when a Bluetooth Headset is plugged in</string>
 
+    <!-- App Settings -->
+    <string name="key_defaultTrue_description">Default Value for unrecognized Apps is True</string>
+    <string name="key_defaultTrue">key_defaultTrue</string>
+
+    <string name="key_allOn_description">Switch all on</string>
+    <string name="key_allOn">key_allOn</string>
+
+    <string name="key_allOff_description">Switch all off</string>
+    <string name="key_allOff">key_allOff</string>
+
     <!-- Strings for Main Activity -->
     <string name="title_activity_main">MainActivity</string>
     <string name="action_refresh">Refresh</string>
@@ -35,5 +45,6 @@
     <string name="start_btn">Start Listener</string>
     <string name="kill_btn">Kill Listener</string>
     <string name="version">1.0</string>
+    <string name="key_defaultTrue_title">Default Value</string>
 
 </resources>

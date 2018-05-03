@@ -12,6 +12,7 @@ import android.media.AudioAttributes;
 import android.media.AudioManager;
 import android.os.Build;
 import android.os.IBinder;
+import android.os.PowerManager;
 import android.preference.PreferenceManager;
 import android.service.notification.NotificationListenerService;
 import android.service.notification.StatusBarNotification;
@@ -40,12 +41,6 @@ public class NotificationListener extends NotificationListenerService implements
 
     public static final String STOP_INTENT_ACTION = "de.bentigorlich.LittleHelper.TOGGLE_LISTENER";
 
-    //Settings
-    private boolean alwaysOn;
-    private boolean withHeadphonesOn;
-    private boolean withHeadsetOn;
-    private boolean withBluetoothHeadsetOn;
-
     //status
     public static boolean connected = false;
 
@@ -54,6 +49,8 @@ public class NotificationListener extends NotificationListenerService implements
     private boolean isBluetoothPluggedIn = false;
     private boolean isMicPluggedIn = false;
     private boolean isRunning = true;
+
+    private PowerManager.WakeLock wake;
 
     //all the last notifications
     private ArrayList<StatusBarNotification> notifications = new ArrayList<>();
@@ -130,10 +127,10 @@ public class NotificationListener extends NotificationListenerService implements
 
     private boolean checkForRunningConditions() {
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
-        alwaysOn = prefs.getBoolean(getString(R.string.key_always_on), false);
-        withHeadphonesOn = prefs.getBoolean(getString(R.string.key_headphones_on), true);
-        withHeadsetOn = prefs.getBoolean(getString(R.string.key_headset_on), true);
-        withBluetoothHeadsetOn = prefs.getBoolean(getString(R.string.key_bluetooth_on), true);
+        boolean alwaysOn = prefs.getBoolean(getString(R.string.key_always_on), false);
+        boolean withHeadphonesOn = prefs.getBoolean(getString(R.string.key_headphones_on), true);
+        boolean withHeadsetOn = prefs.getBoolean(getString(R.string.key_headset_on), true);
+        boolean withBluetoothHeadsetOn = prefs.getBoolean(getString(R.string.key_bluetooth_on), true);
 
         return connected && ttsInit && isRunning &&
                 (
@@ -161,7 +158,7 @@ public class NotificationListener extends NotificationListenerService implements
 
     private boolean checkPreferences(String packagename) {
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
-        return prefs.getBoolean("key_" + packagename, true) || prefs.getBoolean("key_allAppsOn", true);
+        return prefs.getBoolean("key_" + packagename, prefs.getBoolean(getString(R.string.key_defaultTrue), false));
     }
 
     @Override
@@ -201,6 +198,11 @@ public class NotificationListener extends NotificationListenerService implements
         if (!checkReplicate(note)) {
             if (!acl.hasAudioFocus()) {
                 requestAudioFocus();
+                PowerManager powerManager = (PowerManager) getSystemService(POWER_SERVICE);
+                wake = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "ReadingNotificationOut");
+                if (wake != null) {
+                    wake.acquire();
+                }
             }
             String title = note.getNotification().extras.getCharSequence(Notification.EXTRA_TITLE).toString();
             String text = note.getNotification().extras.getCharSequence(Notification.EXTRA_TEXT).toString();
@@ -373,6 +375,9 @@ public class NotificationListener extends NotificationListenerService implements
                 if (intent.getAction().equals(ACTION_TTS_QUEUE_PROCESSING_COMPLETED)) {
                     Log.i(TAG, "TTS is done");
                     abandonAudioFocus();
+                    if (wake != null) {
+                        wake.release();
+                    }
                 }
                 updateNotifications();
             } catch (NullPointerException e) {

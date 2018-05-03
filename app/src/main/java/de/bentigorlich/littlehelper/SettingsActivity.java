@@ -175,9 +175,17 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
 
             PreferenceScreen screen = getPreferenceManager().createPreferenceScreen(this.getContext());
 
+            SwitchPreference defaultValue = new SwitchPreference(this.getContext());
+            defaultValue.setTitle(getString(R.string.key_defaultTrue_title));
+            defaultValue.setSummary(getString(R.string.key_defaultTrue_description));
+            defaultValue.setKey(getString(R.string.key_defaultTrue));
+            defaultValue.setDefaultValue(false);
+            defaultValue.setSelectable(true);
+            screen.addPreference(defaultValue);
+
             SwitchPreference allOn = new SwitchPreference(this.getContext());
-            allOn.setTitle("All on");
-            allOn.setKey("key_allOn");
+            allOn.setTitle(getString(R.string.key_allOn_description));
+            allOn.setKey(getString(R.string.key_allOn));
             allOn.setDefaultValue(false);
             allOn.setSelectable(true);
             allOn.setOnPreferenceChangeListener((preference, o) -> {
@@ -193,9 +201,9 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
             screen.addPreference(allOn);
 
             SwitchPreference allOff = new SwitchPreference(this.getContext());
-            allOff.setTitle("All off");
+            allOff.setTitle(getString(R.string.key_allOff_description));
             allOff.setDefaultValue(false);
-            allOff.setKey("key_allOff");
+            allOff.setKey(getString(R.string.key_allOff));
             allOff.setPersistent(false);
             allOff.setSelectable(true);
             allOff.setOnPreferenceChangeListener((preference, o) -> {
