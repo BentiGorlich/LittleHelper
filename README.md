@@ -1,5 +1,9 @@
 # LittleHelper
 #### Features:
-- read out Notifications
-- choose when it reads 'em out (when Headphones plugged in, when Headset plugged in or always)
-- choose the Apps from which it reads 'em out
+- Reads out Notifications
+- Choose between Headset, Headphones, Bluetooth and always on
+- Choose applications from which it reads 'em out
+- Works with Audiofocus
+- WakeLocks to work properly when the screen is locked
+#### Planned Features:
+- Start only when screen is locked
