@@ -1,4 +1,4 @@
-package bentigorlich.de.littlehelper;
+package de.bentigorlich.littlehelper;
 
 import android.content.Context;
 import android.support.test.InstrumentationRegistry;

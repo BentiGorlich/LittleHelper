@@ -9,29 +9,22 @@
 
     <string name="pref_always_on">Always On</string>
     <string name="pref_always_on_description">Notifications will always be read out</string>
-    <string name="key_always_on">always_on</string>
 
     <string name="pref_headphones_on">Headphones</string>
     <string name="pref_headphones_on_description">Notifications will be read out when headphones are plugged in</string>
-    <string name="key_headphones_on">headphones_on</string>
 
     <string name="pref_headset_on">Headset</string>
     <string name="pref_headset_on_description">Notifications will be read out when a headset is plugged in</string>
-    <string name="key_headset_on">headset_on</string>
 
-    <string name="key_bluetooth_on">bluetooth_on</string>
     <string name="pref_bluetooth_on">Bluetooth Headset</string>
     <string name="pref_bluetooth_on_description">Notifications will be read out when a Bluetooth Headset is plugged in</string>
 
     <!-- App Settings -->
     <string name="key_defaultTrue_description">Default Value for unrecognized Apps is True</string>
-    <string name="key_defaultTrue">key_defaultTrue</string>
 
     <string name="key_allOn_description">Switch all on</string>
-    <string name="key_allOn">key_allOn</string>
 
     <string name="key_allOff_description">Switch all off</string>
-    <string name="key_allOff">key_allOff</string>
 
     <!-- Strings for Main Activity -->
     <string name="title_activity_main">MainActivity</string>
@@ -46,5 +39,13 @@
     <string name="kill_btn">Kill Listener</string>
     <string name="version">1.0</string>
     <string name="key_defaultTrue_title">Default Value</string>
+    <string name="key_general_description">Genereal Settings which are used if not defined else</string>
+    <string name="key_apps_description">Control app specific enabling for notification-reading</string>
+    <string name="pref_header_profiles">App specific profiles</string>
+    <string name="key_profiles_description">Create and edit profiles for the apps on which notification reading is enabled</string>
+    <string name="pref_check_replica">Check for Replica</string>
+    <string name="pref_check_replica_description">Check whether a notification is a replica of the last one and if so ignore it</string>
+    <string name="pref_only_screen_off">Screen off</string>
+    <string name="pref_only_screen_off_description">Notifications will only be read out if the screen is off</string>
 
 </resources>

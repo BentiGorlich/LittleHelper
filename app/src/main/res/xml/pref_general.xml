@@ -2,23 +2,33 @@
 
     <SwitchPreference
         android:defaultValue="false"
-        android:key="@string/key_always_on"
+        android:key="key_always_on"
         android:summary="@string/pref_always_on_description"
         android:title="@string/pref_always_on" />
     <SwitchPreference
         android:defaultValue="true"
-        android:key="@string/key_headphones_on"
+        android:key="key_headphones_on"
         android:summary="@string/pref_headphones_on_description"
         android:title="@string/pref_headphones_on" />
     <SwitchPreference
         android:defaultValue="true"
-        android:key="@string/key_headset_on"
+        android:key="key_headset_on"
         android:summary="@string/pref_headset_on_description"
         android:title="@string/pref_headset_on" />
     <SwitchPreference
         android:defaultValue="true"
-        android:key="@string/key_bluetooth_on"
+        android:key="key_bluetooth_on"
         android:summary="@string/pref_bluetooth_on_description"
         android:title="@string/pref_bluetooth_on" />
+    <SwitchPreference
+        android:defaultValue="true"
+        android:key="key_check_replica"
+        android:summary="@string/pref_check_replica_description"
+        android:title="@string/pref_check_replica" />
+    <SwitchPreference
+        android:defaultValue="false"
+        android:title="@string/pref_only_screen_off"
+        android:summary="@string/pref_only_screen_off_description"
+        android:key="key_only_screen_off" />
 
 </PreferenceScreen>

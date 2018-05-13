@@ -17,11 +17,11 @@ import android.preference.SwitchPreference;
 import android.support.v7.app.ActionBar;
 import android.preference.PreferenceFragment;
 import android.preference.PreferenceManager;
-import android.util.Log;
 import android.view.MenuItem;
-import android.widget.Switch;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 /**
@@ -107,13 +107,14 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        if (isHome) {
             switch (item.getItemId()) {
                 case android.R.id.home:
-                    startActivity(new Intent(this, MainActivity.class));
-                    return true;
+                    if (isHome) {
+                        startActivity(new Intent(this, MainActivity.class));
+                        return true;
+                    }
+                    break;
             }
-        }
         return super.onOptionsItemSelected(item);
     }
 
@@ -152,7 +153,8 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
     protected boolean isValidFragment(String fragmentName) {
         return PreferenceFragment.class.getName().equals(fragmentName)
                 || AppsFragment.class.getName().equals(fragmentName)
-                || GeneralFragment.class.getName().equals(fragmentName);
+                || GeneralFragment.class.getName().equals(fragmentName)
+                || ProfilesFragment.class.getName().equals(fragmentName);
     }
 
     /**
@@ -178,14 +180,14 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
             SwitchPreference defaultValue = new SwitchPreference(this.getContext());
             defaultValue.setTitle(getString(R.string.key_defaultTrue_title));
             defaultValue.setSummary(getString(R.string.key_defaultTrue_description));
-            defaultValue.setKey(getString(R.string.key_defaultTrue));
+            defaultValue.setKey("key_defaultTrue");
             defaultValue.setDefaultValue(false);
             defaultValue.setSelectable(true);
             screen.addPreference(defaultValue);
 
             SwitchPreference allOn = new SwitchPreference(this.getContext());
             allOn.setTitle(getString(R.string.key_allOn_description));
-            allOn.setKey(getString(R.string.key_allOn));
+            allOn.setKey("key_allOn");
             allOn.setDefaultValue(false);
             allOn.setSelectable(true);
             allOn.setOnPreferenceChangeListener((preference, o) -> {
@@ -203,7 +205,7 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
             SwitchPreference allOff = new SwitchPreference(this.getContext());
             allOff.setTitle(getString(R.string.key_allOff_description));
             allOff.setDefaultValue(false);
-            allOff.setKey(getString(R.string.key_allOff));
+            allOff.setKey("key_allOff");
             allOff.setPersistent(false);
             allOff.setSelectable(true);
             allOff.setOnPreferenceChangeListener((preference, o) -> {
@@ -217,6 +219,8 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
                 return true;
             });
             screen.addPreference(allOff);
+
+            ArrayList<SwitchPreference> toAdd = new ArrayList<>();
             for (ResolveInfo rInfo : list) {
                 String str = rInfo.activityInfo.applicationInfo.loadLabel(pm).toString() + "\n";
                 Drawable icon = rInfo.activityInfo.applicationInfo.loadIcon(pm);
@@ -226,9 +230,13 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
                 curr.setTitle(str);
                 curr.setDefaultValue(true);
                 curr.setKey("key_" + rInfo.activityInfo.applicationInfo.packageName);
+                toAdd.add(curr);
+            }
 
-                screen.addPreference(curr);
-                packages.add(curr);
+            toAdd.sort((sw1, sw2) -> sw1.getTitle().toString().compareToIgnoreCase(sw2.getTitle().toString()));
+            for (SwitchPreference sw : toAdd) {
+                screen.addPreference(sw);
+                packages.add(sw);
             }
 
             setPreferenceScreen(screen);
@@ -264,6 +272,39 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
             super.onCreate(savedInstanceState);
             isHome = false;
             addPreferencesFromResource(R.xml.pref_general);
+            setHasOptionsMenu(true);
+        }
+
+        @Override
+        public boolean onOptionsItemSelected(MenuItem item) {
+            int id = item.getItemId();
+            if (id == android.R.id.home) {
+                startActivity(new Intent(getActivity(), SettingsActivity.class));
+                isHome = true;
+                return true;
+            }
+            return super.onOptionsItemSelected(item);
+        }
+
+        @Override
+        public void onDestroy() {
+            super.onDestroy();
+            isHome = true;
+        }
+    }
+
+    /**
+     * This fragment is for profile management
+     */
+    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
+    //TODO
+    public static class ProfilesFragment extends PreferenceFragment {
+
+        @Override
+        public void onCreate(Bundle savedInstanceState) {
+            super.onCreate(savedInstanceState);
+            isHome = false;
+
             setHasOptionsMenu(true);
         }
 
