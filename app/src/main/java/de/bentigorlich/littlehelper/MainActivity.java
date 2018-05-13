@@ -1,5 +1,6 @@
 package de.bentigorlich.littlehelper;
 
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
@@ -42,10 +43,12 @@ public class MainActivity extends AppCompatActivity {
 		});
 
 		btn_kill.setOnClickListener(v -> {
+			Log.i(TAG, "Kill Service");
 			stopService(new Intent(this, NotificationListener.class));
 		});
 
 		btn_start.setOnClickListener(v -> {
+			Log.i(TAG, "Start Service");
 			startService(new Intent(this, NotificationListener.class));
 		});
 

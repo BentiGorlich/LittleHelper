@@ -11,11 +11,10 @@
         android:fragment="de.bentigorlich.littlehelper.SettingsActivity$AppsFragment"
         android:icon="@drawable/ic_notifications_black_24dp"
         android:title="@string/pref_header_apps"
-        android:summary="@string/key_apps_description" />
+        android:summary="@string/pref_apps_description" />
     <header
         android:fragment="de.bentigorlich.littlehelper.SettingsActivity$ProfilesFragment"
-        android:icon="@drawable/ic_notifications_black_24dp"
         android:title="@string/pref_header_profiles"
-        android:summary="@string/key_profiles_description" />
+        android:summary="@string/pref_profiles_description" />
 
 </preference-headers>

@@ -3,20 +3,25 @@ package de.bentigorlich.littlehelper;
 import android.annotation.TargetApi;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.content.res.Configuration;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
+import android.preference.EditTextPreference;
 import android.preference.ListPreference;
 import android.preference.Preference;
 import android.preference.PreferenceActivity;
+import android.preference.PreferenceCategory;
 import android.preference.PreferenceScreen;
 import android.preference.SwitchPreference;
 import android.support.v7.app.ActionBar;
 import android.preference.PreferenceFragment;
 import android.preference.PreferenceManager;
+import android.util.Log;
 import android.view.MenuItem;
 
 import java.util.ArrayList;
@@ -163,17 +168,12 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
      */
     @TargetApi(Build.VERSION_CODES.HONEYCOMB)
     public static class AppsFragment extends PreferenceFragment {
-        List<SwitchPreference> packages = new ArrayList<>();
+        List<SwitchPreference> apps = new ArrayList<>();
 
         @Override
         public void onCreate(Bundle savedInstanceState) {
             super.onCreate(savedInstanceState);
             isHome = false;
-            final PackageManager pm = this.getActivity().getPackageManager();
-            //get a list of installed apps
-            Intent intent = new Intent(Intent.ACTION_MAIN, null);
-            intent.addCategory(Intent.CATEGORY_LAUNCHER);
-            List<ResolveInfo> list = pm.queryIntentActivities(intent, PackageManager.PERMISSION_GRANTED);
 
             PreferenceScreen screen = getPreferenceManager().createPreferenceScreen(this.getContext());
 
@@ -193,7 +193,7 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
             allOn.setOnPreferenceChangeListener((preference, o) -> {
                 SwitchPreference allOn1 = (SwitchPreference) preference;
                 if (!allOn1.isChecked()) {
-                    for (SwitchPreference curr : packages) {
+                    for (SwitchPreference curr : apps) {
                         curr.setChecked(true);
                     }
                     allOn1.setChecked(false);
@@ -211,7 +211,7 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
             allOff.setOnPreferenceChangeListener((preference, o) -> {
                 SwitchPreference allOff1 = (SwitchPreference) preference;
                 if (!allOff1.isChecked()) {
-                    for (SwitchPreference curr : packages) {
+                    for (SwitchPreference curr : apps) {
                         curr.setChecked(false);
                     }
                     allOff1.setChecked(false);
@@ -221,22 +221,33 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
             screen.addPreference(allOff);
 
             ArrayList<SwitchPreference> toAdd = new ArrayList<>();
-            for (ResolveInfo rInfo : list) {
-                String str = rInfo.activityInfo.applicationInfo.loadLabel(pm).toString() + "\n";
-                Drawable icon = rInfo.activityInfo.applicationInfo.loadIcon(pm);
 
-                SwitchPreference curr = new SwitchPreference(this.getContext());
-                curr.setIcon(icon);
-                curr.setTitle(str);
-                curr.setDefaultValue(true);
-                curr.setKey("key_" + rInfo.activityInfo.applicationInfo.packageName);
-                toAdd.add(curr);
+            PackageManager pm = this.getContext().getPackageManager();
+            //get a list of installed apps.
+            List<ApplicationInfo> packages = pm.getInstalledApplications(PackageManager.GET_META_DATA);
+
+            for (ApplicationInfo packageInfo : packages) {
+
+                if (!this.getContext().getPackageName().equals(packageInfo.packageName)) {
+                    String str = packageInfo.processName;
+                    if (pm.getApplicationLabel(packageInfo) != null) {
+                        str = pm.getApplicationLabel(packageInfo).toString();
+                    }
+                    Drawable icon = packageInfo.loadIcon(pm);
+
+                    SwitchPreference curr = new SwitchPreference(this.getContext());
+                    curr.setIcon(icon);
+                    curr.setTitle(str);
+                    curr.setDefaultValue(defaultValue.isChecked());
+                    curr.setKey("key_" + packageInfo.packageName);
+                    toAdd.add(curr);
+                }
             }
 
             toAdd.sort((sw1, sw2) -> sw1.getTitle().toString().compareToIgnoreCase(sw2.getTitle().toString()));
             for (SwitchPreference sw : toAdd) {
                 screen.addPreference(sw);
-                packages.add(sw);
+                apps.add(sw);
             }
 
             setPreferenceScreen(screen);
@@ -304,7 +315,82 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
         public void onCreate(Bundle savedInstanceState) {
             super.onCreate(savedInstanceState);
             isHome = false;
+            PreferenceScreen screen = getPreferenceManager().createPreferenceScreen(this.getContext());
+            EditTextPreference wip = new EditTextPreference(this.getContext());
+            wip.setText("Coming in the future...");
+            wip.setTitle("Coming in the future...");
+            wip.setEnabled(false);
+            screen.addPreference(wip);
 
+
+            ArrayList<PreferenceScreen> toAdd = new ArrayList<>();
+            SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this.getContext());
+
+            PackageManager pm = this.getContext().getPackageManager();
+            //get a list of installed apps.
+            List<ApplicationInfo> packages = pm.getInstalledApplications(PackageManager.GET_META_DATA);
+            List<PreferenceScreen> apps = new ArrayList<>();
+
+            for (ApplicationInfo packageInfo : packages) {
+
+                String str = packageInfo.processName;
+                if (pm.getApplicationLabel(packageInfo) != null) {
+                    str = pm.getApplicationLabel(packageInfo).toString();
+                }
+                Drawable icon = packageInfo.loadIcon(pm);
+
+                if (prefs.getBoolean("key_" + packageInfo.packageName, false)) {
+                    PreferenceScreen curr = getPreferenceManager().createPreferenceScreen(this.getContext());
+                    curr.setIcon(icon);
+                    curr.setTitle(str);
+                    curr.setPersistent(false);
+                    curr.setEnabled(true);
+                    curr.setKey("pref_key_" + packageInfo.packageName);
+
+                    toAdd.add(curr);
+
+                    PreferenceCategory pc = new PreferenceCategory(this.getContext());
+                    pc.setTitle(str);
+                    pc.setOrder(Preference.DEFAULT_ORDER);
+                    pc.setKey("pref_key_" + packageInfo.packageName + "_category");
+                    pc.setEnabled(true);
+                    pc.setPersistent(false);
+
+                    curr.addPreference(pc);
+
+                    SwitchPreference headphones = new SwitchPreference(this.getContext());
+                    headphones.setTitle(R.string.pref_headphones_on);
+                    headphones.setSummary(R.string.pref_headphones_on_description);
+                    headphones.setKey("key_" + packageInfo.packageName + "_headphones_on");
+
+                    SwitchPreference headset = new SwitchPreference(this.getContext());
+                    headset.setTitle(R.string.pref_headset_on);
+                    headset.setSummary(R.string.pref_headset_on_description);
+                    headset.setKey("key_" + packageInfo.packageName + "_headset_on");
+
+                    SwitchPreference bluetooth = new SwitchPreference(this.getContext());
+                    bluetooth.setTitle(R.string.pref_bluetooth_on);
+                    bluetooth.setSummary(R.string.pref_bluetooth_on_description);
+                    bluetooth.setKey("key_" + packageInfo.packageName + "_bluetooth_on");
+
+                    SwitchPreference screenOff = new SwitchPreference(this.getContext());
+                    screenOff.setTitle(R.string.pref_only_screen_off);
+                    screenOff.setSummary(R.string.pref_only_screen_off_description);
+                    screenOff.setKey("key_" + packageInfo.packageName + "only_screen_off");
+
+                    pc.addPreference(headphones);
+                    pc.addPreference(headset);
+                    pc.addPreference(bluetooth);
+                    pc.addPreference(screenOff);
+                }
+            }
+
+            toAdd.sort((ps1, ps2) -> ps1.getTitle().toString().compareToIgnoreCase(ps2.getTitle().toString()));
+            for (PreferenceScreen ps : toAdd) {
+                screen.addPreference(ps);
+            }
+
+            setPreferenceScreen(screen);
             setHasOptionsMenu(true);
         }
 
