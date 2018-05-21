@@ -30,6 +30,15 @@
     <string name="pref_only_screen_off">Screen off</string>
     <string name="pref_only_screen_off_description">Notifications will only be read out if the screen is off</string>
 
+    <string name="pref_use_general">General</string>
+    <string name="pref_use_general_description">Use the general preferences instead</string>
+
+    <string name="pref_blacklist_words_title">Blacklisted Words in notification title</string>
+    <string name="pref_blacklist_words_title_description">If one of these words occur in a notification-title, it won\'t be read out. Separate words by space</string>
+
+    <string name="pref_blacklist_words_text">Blacklisted Words in notification text</string>
+    <string name="pref_blacklist_words_text_description">If one of these words occur in a notification-text, it won\'t be read out. Separate words by space</string>
+
     <!-- App Settings -->
     <string name="key_defaultTrue_title">Default Value</string>
 

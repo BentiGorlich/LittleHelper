@@ -73,6 +73,7 @@ public class NotificationListener extends NotificationListenerService implements
     private NotificationButtonListener receiver_notification = new NotificationButtonListener();
 	private TTSDoneListener receiver_tts_done = new TTSDoneListener();
     private ScreenChangeListener receiver_screenChange = new ScreenChangeListener();
+	private PreferenceChangeListener preferenceChangeListener = new PreferenceChangeListener();
 
     private Intent STOP_INTENT;
     private PendingIntent STOP_PENDING_INTENT;
@@ -84,12 +85,7 @@ public class NotificationListener extends NotificationListenerService implements
     public void onCreate() {
         super.onCreate();
 
-		PreferenceManager.getDefaultSharedPreferences(this).registerOnSharedPreferenceChangeListener(new SharedPreferences.OnSharedPreferenceChangeListener() {
-			@Override
-			public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
-				updateNotifications();
-			}
-		});
+		PreferenceManager.getDefaultSharedPreferences(this).registerOnSharedPreferenceChangeListener(preferenceChangeListener);
 
         System.out.println("NotificationListener has started");
         isBluetoothPluggedIn =
@@ -131,6 +127,7 @@ public class NotificationListener extends NotificationListenerService implements
         unregisterReceiver(this.receiver_bluetooth);
 		unregisterReceiver(this.receiver_screenChange);
 		unregisterReceiver(this.receiver_tts_done);
+		PreferenceManager.getDefaultSharedPreferences(this).unregisterOnSharedPreferenceChangeListener(preferenceChangeListener);
 		tts.shutdown();
         abandonAudioFocus();
 		removeNotification();
@@ -165,7 +162,7 @@ public class NotificationListener extends NotificationListenerService implements
         boolean withBluetoothHeadsetOn = prefs.getBoolean("key_bluetooth_on", true);
 		boolean onlyWhenScreenIsOff = prefs.getBoolean("key_only_screen_off", false);
 
-		boolean res = connected && ttsInit && isRunning &&
+		return connected && ttsInit && isRunning &&
 				(
 						!onlyWhenScreenIsOff || isScreenOff
 				)
@@ -177,41 +174,50 @@ public class NotificationListener extends NotificationListenerService implements
 								|| (withBluetoothHeadsetOn && isBluetoothPluggedIn)//bluetooth
 								|| (isManuallyStarted)
 				);
-        /*
-        Log.d("check", "res: " + res);
-        Log.d("check", "alwaysOn: " + alwaysOn);
-        Log.d("check", "withHeadphonesOn: " + withHeadphonesOn);
-        Log.d("check", "isHeadsetPluggedIn: " + isHeadsetPluggedIn);
-        Log.d("check", "withHeadsetOn: " + withHeadsetOn);
-        Log.d("check", "isMicPluggedIn: " + isMicPluggedIn);
-        Log.d("check", "withBluetoothHeadsetOn: " + withBluetoothHeadsetOn);
-        Log.d("check", "isBluetoothPluggedIn: " + isBluetoothPluggedIn);
-        Log.d("check", "onlyWhenScreenIsOff: " + onlyWhenScreenIsOff);
-        Log.d("check", "isScreenOff: " + isScreenOff);
-        */
-		return res;
 	}
 
 	private boolean checkForRunningConditions(String packageName) {
 		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
 		boolean alwaysOn = prefs.getBoolean("key_always_on", false);
-		boolean withHeadphonesOn = prefs.getBoolean("key_" + packageName + "_headphones_on", prefs.getBoolean("key_headphones_on", true));
-		boolean withHeadsetOn = prefs.getBoolean("key_" + packageName + "_headset_on", prefs.getBoolean("key_headset_on", true));
-		boolean withBluetoothHeadsetOn = prefs.getBoolean("key_" + packageName + "_bluetooth_on", prefs.getBoolean("key_bluetooth_on", true));
-		boolean onlyWhenScreenIsOff = prefs.getBoolean("key_" + packageName + "_only_screen_off", prefs.getBoolean("key_only_screen_off", false));
+		boolean useGeneralPrefs = prefs.getBoolean("key_" + packageName + "_use_general", true);
 
-		boolean res = connected && ttsInit && isRunning &&
-                (
-						!onlyWhenScreenIsOff || isScreenOff
-                )
-                &&
-                (
-                        (alwaysOn)//always on
-                                || (withHeadphonesOn && isHeadsetPluggedIn && !isMicPluggedIn)// headphones
-                                || (withHeadsetOn && isHeadsetPluggedIn && isMicPluggedIn)//headset
-                                || (withBluetoothHeadsetOn && isBluetoothPluggedIn)//bluetooth
-                                || (isManuallyStarted)
-                );
+		boolean res;
+		if (!useGeneralPrefs) {
+			boolean withHeadphonesOn = prefs.getBoolean("key_" + packageName + "_headphones_on", prefs.getBoolean("key_headphones_on", true));
+			boolean withHeadsetOn = prefs.getBoolean("key_" + packageName + "_headset_on", prefs.getBoolean("key_headset_on", true));
+			boolean withBluetoothHeadsetOn = prefs.getBoolean("key_" + packageName + "_bluetooth_on", prefs.getBoolean("key_bluetooth_on", true));
+			boolean onlyWhenScreenIsOff = prefs.getBoolean("key_" + packageName + "_only_screen_off", prefs.getBoolean("key_only_screen_off", false));
+			res = connected && ttsInit && isRunning &&
+					(
+							!onlyWhenScreenIsOff || isScreenOff
+					)
+					&&
+					(
+							(alwaysOn)//always on
+									|| (withHeadphonesOn && isHeadsetPluggedIn && !isMicPluggedIn)// headphones
+									|| (withHeadsetOn && isHeadsetPluggedIn && isMicPluggedIn)//headset
+									|| (withBluetoothHeadsetOn && isBluetoothPluggedIn)//bluetooth
+									|| (isManuallyStarted)
+					);
+		} else {
+			boolean withHeadphonesOn = prefs.getBoolean("key_headphones_on", true);
+			boolean withHeadsetOn = prefs.getBoolean("key_headset_on", true);
+			boolean withBluetoothHeadsetOn = prefs.getBoolean("key_bluetooth_on", true);
+			boolean onlyWhenScreenIsOff = prefs.getBoolean("key_only_screen_off", false);
+
+			res = connected && ttsInit && isRunning &&
+					(
+							!onlyWhenScreenIsOff || isScreenOff
+					)
+					&&
+					(
+							(alwaysOn)//always on
+									|| (withHeadphonesOn && isHeadsetPluggedIn && !isMicPluggedIn)// headphones
+									|| (withHeadsetOn && isHeadsetPluggedIn && isMicPluggedIn)//headset
+									|| (withBluetoothHeadsetOn && isBluetoothPluggedIn)//bluetooth
+									|| (isManuallyStarted)
+					);
+		}
         /*
         Log.d("check", "res: " + res);
         Log.d("check", "alwaysOn: " + alwaysOn);
@@ -242,9 +248,13 @@ public class NotificationListener extends NotificationListenerService implements
         }
     }
 
-    private boolean checkPreferences(String packagename) {
+	/**
+	 * @param packageName the packageName to check conditions for
+	 * @return true if notification reading is enabled for this package
+	 */
+	private boolean checkPreferences(String packageName) {
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
-        return prefs.getBoolean("key_" + packagename, prefs.getBoolean("key_defaultTrue", false));
+		return prefs.getBoolean("key_" + packageName, prefs.getBoolean("key_defaultTrue", false));
     }
 
     @Override
@@ -280,10 +290,40 @@ public class NotificationListener extends NotificationListenerService implements
         return false;
     }
 
+	/**
+	 * @param packageName the package name to get the blacklisted words for the title from
+	 * @param text        the string to check for blacklisted words
+	 * @return true if text contains a blacklisted word
+	 */
+	private boolean checkForBlacklistedWordsInTitle(String packageName, String text) {
+		SharedPreferences shp = PreferenceManager.getDefaultSharedPreferences(this);
+		String[] blacklistedWords = shp.getString("key_" + packageName + "blacklist_words_title", "").split(" ");
+		for (String word : blacklistedWords) {
+			if (text.contains(word))
+				return true;
+		}
+		return false;
+	}
+
+	/**
+	 * @param packageName the package name to get the blacklisted words for the text from
+	 * @param text        the string to check for blacklisted words
+	 * @return true if text contains a blacklisted word
+	 */
+	private boolean checkForBlacklistedWordsInText(String packageName, String text) {
+		SharedPreferences shp = PreferenceManager.getDefaultSharedPreferences(this);
+		String[] blacklistedWords = shp.getString("key_" + packageName + "blacklist_words_text", "").split(" ");
+		for (String word : blacklistedWords) {
+			if (text.contains(word))
+				return true;
+		}
+		return false;
+	}
+
     private void readNotification(StatusBarNotification note) {
         SharedPreferences shp = PreferenceManager.getDefaultSharedPreferences(this);
-        boolean valid = true;
-        if (shp.getBoolean("key_check_replica", true)) {
+		boolean valid = true;
+		if (shp.getBoolean("key_" + note.getPackageName() + "_check_replica", shp.getBoolean("key_check_replica", true))) {
             valid = !checkReplicate(note);
             saveLastNotification(note);
         }
@@ -299,11 +339,14 @@ public class NotificationListener extends NotificationListenerService implements
                 }
             }
             String title = note.getNotification().extras.getCharSequence(Notification.EXTRA_TITLE).toString();
+			title = EmojiParser.removeAllEmojis(title);
             String text = note.getNotification().extras.getCharSequence(Notification.EXTRA_TEXT).toString();
-            String toRead = title + ": " + text;
-            toRead = EmojiParser.removeAllEmojis(toRead);
-            Log.i(TAG, "new Notification: " + toRead);
-            tts.speak(toRead, TextToSpeech.QUEUE_ADD, null);
+			text = EmojiParser.removeAllEmojis(text);
+			String toRead = title + ": " + text;
+			if (!checkForBlacklistedWordsInTitle(note.getPackageName(), title) && !checkForBlacklistedWordsInText(note.getPackageName(), text)) {
+				Log.i(TAG, "new Notification: " + toRead);
+				tts.speak(toRead, TextToSpeech.QUEUE_ADD, null);
+			}
         }
     }
 
@@ -378,14 +421,13 @@ public class NotificationListener extends NotificationListenerService implements
             text = text.substring(0, text.length() - 1);
         }
         builder.setContentTitle(title);
-        builder.setContentText(text);
-        builder.setOngoing(true);
+		builder.setContentText(text);
+		builder.setOngoing(checkForRunningConditions() || !isRunning || isManuallyStarted);
         builder.setCategory("Information");
         builder.setAutoCancel(false);
         builder.setPriority(NotificationCompat.PRIORITY_DEFAULT);
         builder.setSmallIcon(R.drawable.ic_notifications_black_24dp);
-        builder.setStyle(new NotificationCompat.BigTextStyle()
-                .bigText(text));
+		builder.setStyle(new NotificationCompat.BigTextStyle().bigText(text));
 		builder.setContentIntent(PendingIntent.getActivity(this, 0, new Intent(this, MainActivity.class), 0));
         NotificationManagerCompat manager = NotificationManagerCompat.from(this);
         manager.notify(0, builder.build());
@@ -521,18 +563,26 @@ public class NotificationListener extends NotificationListenerService implements
         }
     }
 
-    private class ScreenChangeListener extends BroadcastReceiver {
+	private class ScreenChangeListener extends BroadcastReceiver {
 
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            if (intent.getAction().equals(Intent.ACTION_SCREEN_OFF)) {
-                isScreenOff = true;
-                Log.i("ScreenChangeListener", "locked");
-            } else if (intent.getAction().equals(Intent.ACTION_SCREEN_ON)) {
-                isScreenOff = false;
-                Log.i("ScreenChangeListener", "unlocked");
-            }
+		@Override
+		public void onReceive(Context context, Intent intent) {
+			if (intent.getAction().equals(Intent.ACTION_SCREEN_OFF)) {
+				isScreenOff = true;
+				Log.i("ScreenChangeListener", "locked");
+			} else if (intent.getAction().equals(Intent.ACTION_SCREEN_ON)) {
+				isScreenOff = false;
+				Log.i("ScreenChangeListener", "unlocked");
+			}
 			updateNotifications();
-        }
-    }
+		}
+	}
+
+	private class PreferenceChangeListener implements SharedPreferences.OnSharedPreferenceChangeListener {
+
+		@Override
+		public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
+			updateNotifications();
+		}
+	}
 }

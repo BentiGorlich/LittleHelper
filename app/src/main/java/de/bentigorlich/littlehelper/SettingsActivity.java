@@ -6,7 +6,6 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
-import android.content.pm.ResolveInfo;
 import android.content.res.Configuration;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
@@ -21,12 +20,11 @@ import android.preference.SwitchPreference;
 import android.support.v7.app.ActionBar;
 import android.preference.PreferenceFragment;
 import android.preference.PreferenceManager;
-import android.util.Log;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.RelativeLayout;
 
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 
 /**
@@ -308,28 +306,18 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
      * This fragment is for profile management
      */
     @TargetApi(Build.VERSION_CODES.HONEYCOMB)
-    //TODO
     public static class ProfilesFragment extends PreferenceFragment {
-
         @Override
         public void onCreate(Bundle savedInstanceState) {
             super.onCreate(savedInstanceState);
             isHome = false;
             PreferenceScreen screen = getPreferenceManager().createPreferenceScreen(this.getContext());
-            EditTextPreference wip = new EditTextPreference(this.getContext());
-            wip.setText("Coming in the future...");
-            wip.setTitle("Coming in the future...");
-            wip.setEnabled(false);
-            screen.addPreference(wip);
-
-
-            ArrayList<PreferenceScreen> toAdd = new ArrayList<>();
+			setPreferenceScreen(screen);
             SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this.getContext());
 
             PackageManager pm = this.getContext().getPackageManager();
             //get a list of installed apps.
             List<ApplicationInfo> packages = pm.getInstalledApplications(PackageManager.GET_META_DATA);
-            List<PreferenceScreen> apps = new ArrayList<>();
 
             for (ApplicationInfo packageInfo : packages) {
 
@@ -347,7 +335,7 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
                     curr.setEnabled(true);
                     curr.setKey("pref_key_" + packageInfo.packageName);
 
-                    toAdd.add(curr);
+					screen.addPreference(curr);
 
                     PreferenceCategory pc = new PreferenceCategory(this.getContext());
                     pc.setTitle(str);
@@ -357,6 +345,18 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
                     pc.setPersistent(false);
 
                     curr.addPreference(pc);
+
+					SwitchPreference useGeneral = new SwitchPreference((this.getContext()));
+					useGeneral.setKey("key_" + packageInfo.packageName + "_use_general");
+					useGeneral.setSummary(R.string.pref_use_general_description);
+					useGeneral.setTitle(R.string.pref_use_general);
+					useGeneral.setDefaultValue(true);
+					useGeneral.setDisableDependentsState(true);
+
+					SwitchPreference checkReplica = new SwitchPreference(this.getContext());
+					checkReplica.setTitle(R.string.pref_check_replica);
+					checkReplica.setSummary(R.string.pref_check_replica_description);
+					checkReplica.setKey("key_" + packageInfo.packageName + "_check_replica");
 
                     SwitchPreference headphones = new SwitchPreference(this.getContext());
                     headphones.setTitle(R.string.pref_headphones_on);
@@ -376,21 +376,36 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
                     SwitchPreference screenOff = new SwitchPreference(this.getContext());
                     screenOff.setTitle(R.string.pref_only_screen_off);
                     screenOff.setSummary(R.string.pref_only_screen_off_description);
-                    screenOff.setKey("key_" + packageInfo.packageName + "only_screen_off");
+					screenOff.setKey("key_" + packageInfo.packageName + "_only_screen_off");
 
+					EditTextPreference blacklistWordsInTitle = new EditTextPreference(this.getContext());
+					blacklistWordsInTitle.setTitle(R.string.pref_blacklist_words_title);
+					blacklistWordsInTitle.setSummary(R.string.pref_blacklist_words_title_description);
+					blacklistWordsInTitle.setKey("key_" + packageInfo.packageName + "_blacklist_words");
+					blacklistWordsInTitle.setDefaultValue("");
+
+					EditTextPreference blacklistWordsInText = new EditTextPreference(this.getContext());
+					blacklistWordsInText.setTitle(R.string.pref_blacklist_words_text);
+					blacklistWordsInText.setSummary(R.string.pref_blacklist_words_text_description);
+					blacklistWordsInText.setKey("key_" + packageInfo.packageName + "_blacklist_words");
+					blacklistWordsInText.setDefaultValue("");
+
+					pc.addPreference(useGeneral);
+					pc.addPreference(checkReplica);
                     pc.addPreference(headphones);
                     pc.addPreference(headset);
                     pc.addPreference(bluetooth);
                     pc.addPreference(screenOff);
-                }
-            }
+					pc.addPreference(blacklistWordsInTitle);
+					pc.addPreference(blacklistWordsInText);
 
-            toAdd.sort((ps1, ps2) -> ps1.getTitle().toString().compareToIgnoreCase(ps2.getTitle().toString()));
-            for (PreferenceScreen ps : toAdd) {
-                screen.addPreference(ps);
-            }
-
-            setPreferenceScreen(screen);
+					screenOff.setDependency(useGeneral.getKey());
+					bluetooth.setDependency(useGeneral.getKey());
+					headset.setDependency(useGeneral.getKey());
+					checkReplica.setDependency(useGeneral.getKey());
+					headphones.setDependency(useGeneral.getKey());
+				}
+			}
             setHasOptionsMenu(true);
         }
 
@@ -411,4 +426,17 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
             isHome = true;
         }
     }
+
+	//show
+	public void showLoadingAnimation() {
+		RelativeLayout pageLoading = (RelativeLayout) findViewById(R.id.main_layoutPageLoading);
+		pageLoading.setVisibility(View.VISIBLE);
+	}
+
+
+	//hide
+	public void hideLoadingAnimation() {
+		RelativeLayout pageLoading = (RelativeLayout) findViewById(R.id.main_layoutPageLoading);
+		pageLoading.setVisibility(View.GONE);
+	}
 }
