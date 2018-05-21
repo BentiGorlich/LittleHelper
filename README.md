@@ -13,3 +13,4 @@ Currently in alpha, stability tests are running...
 
 #### Planned Features:
 - confirmed stability
+- regex in blacklist
