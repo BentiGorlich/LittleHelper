@@ -1,5 +1,5 @@
 # LittleHelper
-Currently in alpha, stbility test are running...
+Currently in alpha, stability tests are running...
 #### Features:
 - Reads out Notifications
 - Choose between Headset, Headphones, Bluetooth and always on
