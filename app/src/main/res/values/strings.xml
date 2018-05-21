@@ -33,22 +33,24 @@
     <string name="pref_use_general">General</string>
     <string name="pref_use_general_description">Use the general preferences instead</string>
 
+    <!-- App Settings -->
+    <string name="key_defaultTrue_title">Default value</string>
+
+    <string name="key_general_description">General settings which are used if not defined else</string>
+
+    <string name="key_defaultTrue_description">Default value for unrecognized Apps is True</string>
+
+    <string name="key_allOn_description">Switch all on</string>
+
+    <string name="key_allOff_description">Switch all off</string>
+
+    <!-- App Profiles -->
+
     <string name="pref_blacklist_words_title">Blacklisted Words in notification title</string>
     <string name="pref_blacklist_words_title_description">If one of these words occur in a notification-title, it won\'t be read out. Separate words by space</string>
 
     <string name="pref_blacklist_words_text">Blacklisted Words in notification text</string>
     <string name="pref_blacklist_words_text_description">If one of these words occur in a notification-text, it won\'t be read out. Separate words by space</string>
-
-    <!-- App Settings -->
-    <string name="key_defaultTrue_title">Default Value</string>
-
-    <string name="key_general_description">Genereal Settings which are used if not defined else</string>
-
-    <string name="key_defaultTrue_description">Default Value for unrecognized Apps is True</string>
-
-    <string name="key_allOn_description">Switch all on</string>
-
-    <string name="key_allOff_description">Switch all off</string>
 
     <!-- Strings for Main Activity -->
     <string name="title_activity_main">MainActivity</string>
