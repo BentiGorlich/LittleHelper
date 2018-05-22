@@ -199,6 +199,17 @@ public class NotificationListener extends NotificationListenerService implements
 									|| (withBluetoothHeadsetOn && isBluetoothPluggedIn)//bluetooth
 									|| (isManuallyStarted)
 					);
+
+			Log.d("check", "res: " + res);
+			Log.d("check", "alwaysOn: " + alwaysOn);
+			Log.d("check", "withHeadphonesOn: " + withHeadphonesOn);
+			Log.d("check", "isHeadsetPluggedIn: " + isHeadsetPluggedIn);
+			Log.d("check", "withHeadsetOn: " + withHeadsetOn);
+			Log.d("check", "isMicPluggedIn: " + isMicPluggedIn);
+			Log.d("check", "withBluetoothHeadsetOn: " + withBluetoothHeadsetOn);
+			Log.d("check", "isBluetoothPluggedIn: " + isBluetoothPluggedIn);
+			Log.d("check", "onlyWhenScreenIsOff: " + onlyWhenScreenIsOff);
+			Log.d("check", "isScreenOff: " + isScreenOff);
 		} else {
 			boolean withHeadphonesOn = prefs.getBoolean("key_headphones_on", true);
 			boolean withHeadsetOn = prefs.getBoolean("key_headset_on", true);
@@ -217,30 +228,31 @@ public class NotificationListener extends NotificationListenerService implements
 									|| (withBluetoothHeadsetOn && isBluetoothPluggedIn)//bluetooth
 									|| (isManuallyStarted)
 					);
+
+			Log.d("check", "res: " + res);
+			Log.d("check", "alwaysOn: " + alwaysOn);
+			Log.d("check", "withHeadphonesOn: " + withHeadphonesOn);
+			Log.d("check", "isHeadsetPluggedIn: " + isHeadsetPluggedIn);
+			Log.d("check", "withHeadsetOn: " + withHeadsetOn);
+			Log.d("check", "isMicPluggedIn: " + isMicPluggedIn);
+			Log.d("check", "withBluetoothHeadsetOn: " + withBluetoothHeadsetOn);
+			Log.d("check", "isBluetoothPluggedIn: " + isBluetoothPluggedIn);
+			Log.d("check", "onlyWhenScreenIsOff: " + onlyWhenScreenIsOff);
+			Log.d("check", "isScreenOff: " + isScreenOff);
 		}
-        /*
-        Log.d("check", "res: " + res);
-        Log.d("check", "alwaysOn: " + alwaysOn);
-        Log.d("check", "withHeadphonesOn: " + withHeadphonesOn);
-        Log.d("check", "isHeadsetPluggedIn: " + isHeadsetPluggedIn);
-        Log.d("check", "withHeadsetOn: " + withHeadsetOn);
-        Log.d("check", "isMicPluggedIn: " + isMicPluggedIn);
-        Log.d("check", "withBluetoothHeadsetOn: " + withBluetoothHeadsetOn);
-        Log.d("check", "isBluetoothPluggedIn: " + isBluetoothPluggedIn);
-        Log.d("check", "onlyWhenScreenIsOff: " + onlyWhenScreenIsOff);
-        Log.d("check", "isScreenOff: " + isScreenOff);
-        */
+
 		return res;
     }
 
     @Override
     public void onNotificationPosted(StatusBarNotification note) {
         try {
-
+			Log.d(TAG, "checking " + note.getPackageName());
 			if (checkForRunningConditions(note.getPackageName())
                     && checkPreferences(note.getPackageName())
                     && !note.getPackageName().equals(this.getPackageName())
-                    && !note.isOngoing()) {
+				//&& !note.isOngoing()
+					) {
                 readNotification(note);
                 updateNotifications();
             }
@@ -297,9 +309,12 @@ public class NotificationListener extends NotificationListenerService implements
 	 */
 	private boolean checkForBlacklistedWordsInTitle(String packageName, String text) {
 		SharedPreferences shp = PreferenceManager.getDefaultSharedPreferences(this);
-		String[] blacklistedWords = shp.getString("key_" + packageName + "blacklist_words_title", "").split(" ");
+		String words = shp.getString("key_" + packageName + "_blacklist_words_title", "");
+		Log.d(TAG, "blacklisted words: " + words);
+		String[] blacklistedWords = words.split(" ");
 		for (String word : blacklistedWords) {
-			if (text.contains(word))
+			Log.d(TAG, text + " contains " + word + "? " + (text.toLowerCase().contains(word.toLowerCase()) && !word.equals("")));
+			if (text.toLowerCase().contains(word.toLowerCase()) && !word.equals(""))
 				return true;
 		}
 		return false;
@@ -312,40 +327,48 @@ public class NotificationListener extends NotificationListenerService implements
 	 */
 	private boolean checkForBlacklistedWordsInText(String packageName, String text) {
 		SharedPreferences shp = PreferenceManager.getDefaultSharedPreferences(this);
-		String[] blacklistedWords = shp.getString("key_" + packageName + "blacklist_words_text", "").split(" ");
+		String words = shp.getString("key_" + packageName + "_blacklist_words_text", "");
+		Log.d(TAG, "blacklisted words: " + words);
+		String[] blacklistedWords = words.split(" ");
 		for (String word : blacklistedWords) {
-			if (text.contains(word))
+			Log.d(TAG, text + " contains " + word + "? " + (text.toLowerCase().contains(word.toLowerCase()) && !word.equals("")));
+			if (text.toLowerCase().contains(word.toLowerCase()) && !word.equals(""))
 				return true;
 		}
 		return false;
 	}
 
     private void readNotification(StatusBarNotification note) {
+		Log.d(TAG, "in readNotification");
         SharedPreferences shp = PreferenceManager.getDefaultSharedPreferences(this);
 		boolean valid = true;
 		if (shp.getBoolean("key_" + note.getPackageName() + "_check_replica", shp.getBoolean("key_check_replica", true))) {
             valid = !checkReplicate(note);
             saveLastNotification(note);
         }
+		Log.d(TAG, "valid: " + valid);
         if (valid) {
-            if (!acl.hasAudioFocus()) {
-                requestAudioFocus();
-                PowerManager powerManager = (PowerManager) getSystemService(POWER_SERVICE);
-                if (powerManager != null) {
-                    wake = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "ReadingNotificationOut");
-                    if (wake != null) {
-                        wake.acquire();
-                    }
-                }
-            }
             String title = note.getNotification().extras.getCharSequence(Notification.EXTRA_TITLE).toString();
 			title = EmojiParser.removeAllEmojis(title);
             String text = note.getNotification().extras.getCharSequence(Notification.EXTRA_TEXT).toString();
 			text = EmojiParser.removeAllEmojis(text);
 			String toRead = title + ": " + text;
 			if (!checkForBlacklistedWordsInTitle(note.getPackageName(), title) && !checkForBlacklistedWordsInText(note.getPackageName(), text)) {
+				Log.d(TAG, "not blacklisted");
+				if (!acl.hasAudioFocus()) {
+					requestAudioFocus();
+					PowerManager powerManager = (PowerManager) getSystemService(POWER_SERVICE);
+					if (powerManager != null) {
+						wake = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "ReadingNotificationOut");
+						if (wake != null) {
+							wake.acquire();
+						}
+					}
+				}
 				Log.i(TAG, "new Notification: " + toRead);
 				tts.speak(toRead, TextToSpeech.QUEUE_ADD, null);
+			} else {
+				Log.d(TAG, "blacklisted");
 			}
         }
     }

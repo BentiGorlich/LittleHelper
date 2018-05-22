@@ -381,13 +381,13 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
 					EditTextPreference blacklistWordsInTitle = new EditTextPreference(this.getContext());
 					blacklistWordsInTitle.setTitle(R.string.pref_blacklist_words_title);
 					blacklistWordsInTitle.setSummary(R.string.pref_blacklist_words_title_description);
-					blacklistWordsInTitle.setKey("key_" + packageInfo.packageName + "_blacklist_words");
+                    blacklistWordsInTitle.setKey("key_" + packageInfo.packageName + "_blacklist_words_title");
 					blacklistWordsInTitle.setDefaultValue("");
 
 					EditTextPreference blacklistWordsInText = new EditTextPreference(this.getContext());
 					blacklistWordsInText.setTitle(R.string.pref_blacklist_words_text);
 					blacklistWordsInText.setSummary(R.string.pref_blacklist_words_text_description);
-					blacklistWordsInText.setKey("key_" + packageInfo.packageName + "_blacklist_words");
+                    blacklistWordsInText.setKey("key_" + packageInfo.packageName + "_blacklist_words_text");
 					blacklistWordsInText.setDefaultValue("");
 
 					pc.addPreference(useGeneral);
