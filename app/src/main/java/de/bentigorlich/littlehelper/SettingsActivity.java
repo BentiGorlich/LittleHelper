@@ -1,6 +1,8 @@
 package de.bentigorlich.littlehelper;
 
 import android.annotation.TargetApi;
+import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -8,15 +10,19 @@ import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.graphics.drawable.Drawable;
+import android.net.wifi.WifiConfiguration;
+import android.net.wifi.WifiManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.preference.EditTextPreference;
 import android.preference.ListPreference;
+import android.preference.MultiSelectListPreference;
 import android.preference.Preference;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceCategory;
 import android.preference.PreferenceScreen;
 import android.preference.SwitchPreference;
+import android.support.annotation.NonNull;
 import android.support.v7.app.ActionBar;
 import android.preference.PreferenceFragment;
 import android.preference.PreferenceManager;
@@ -24,8 +30,16 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.RelativeLayout;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
+import java.util.Set;
 
 /**
  * A {@link PreferenceActivity} that presents a set of application settings. On
@@ -276,15 +290,118 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
      */
     @TargetApi(Build.VERSION_CODES.HONEYCOMB)
     public static class GeneralFragment extends PreferenceFragment {
-        @Override
+		private static final int REQUEST_ENABLE_BT = 22500;
+
+		MultiSelectListPreference bluetooth;
+		MultiSelectListPreference wifi;
+
+		@Override
         public void onCreate(Bundle savedInstanceState) {
             super.onCreate(savedInstanceState);
             isHome = false;
             addPreferencesFromResource(R.xml.pref_general);
-            setHasOptionsMenu(true);
+
+			bluetooth = new MultiSelectListPreference(this.getContext());
+			bluetooth.setKey("key_bluetooth_devices");
+			wifi = new MultiSelectListPreference(this.getContext());
+			wifi.setKey("key_wifi_devices");
+
+			for (int i = 0; i < getPreferenceScreen().getPreferenceCount(); i++) {
+				Preference curr = getPreferenceScreen().getPreference(i);
+				if (curr.getKey() != null) {
+					if (curr.getKey().equals(getString(R.string.key_cat_devices))) {
+						PreferenceCategory cat = (PreferenceCategory) curr;
+						cat.addPreference(bluetooth);
+						cat.addPreference(wifi);
+						break;
+					}
+				}
+			}
+
+			bluetooth.setTitle(R.string.pref_bluetooth_devices);
+			bluetooth.setDependency("key_bluetooth_on");
+
+			BluetoothAdapter mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+			if (mBluetoothAdapter != null) {
+				if (!mBluetoothAdapter.isEnabled()) {
+					Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+					startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
+				} else {
+					if (bluetooth == null) {
+						populateBTDevices();
+					} else if (bluetooth.getEntries() == null) {
+						populateBTDevices();
+					} else if (bluetooth.getEntries().length == 0) {
+						populateBTDevices();
+					}
+				}
+			}
+
+			wifi.setTitle(R.string.pref_wifi_devices);
+			wifi.setDependency("key_wifi_on");
+
+			WifiManager wifiManager = this.getContext().getSystemService(WifiManager.class);
+			if (wifiManager != null) {
+				if (!wifiManager.isWifiEnabled()) {
+					wifiManager.setWifiEnabled(true);
+				}
+				populateWiFiDevices(wifiManager);
+			}
+
+			setHasOptionsMenu(true);
         }
 
-        @Override
+		private void populateWiFiDevices(@NonNull WifiManager wifiManager) {
+			List<WifiConfiguration> wifis = wifiManager.getConfiguredNetworks();
+			String[] wifiNames = new String[wifis.size()];
+			String[] wifiKeys = new String[wifis.size()];
+			int i = 0;
+			for (WifiConfiguration curr : wifis) {
+				wifiNames[i] = curr.SSID.replace("\"", "");
+				wifiKeys[i] = curr.SSID.replace("\"", "");
+				i++;
+			}
+			wifi.setEntries(wifiNames);
+			wifi.setEntryValues(wifiKeys);
+		}
+
+		private void populateBTDevices() {
+			BluetoothAdapter mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+			Set<BluetoothDevice> pairedDevices = mBluetoothAdapter.getBondedDevices();
+			String[] deviceNames = new String[pairedDevices.size()];
+			String[] deviceKeys = new String[pairedDevices.size()];
+			int i = 0;
+			for (BluetoothDevice curr : pairedDevices) {
+				deviceNames[i] = curr.getName();
+				deviceKeys[i] = curr.getName();
+				i++;
+			}
+			bluetooth.setEntries(deviceNames);
+			bluetooth.setEntryValues(deviceKeys);
+				/*else{
+				String[] deviceNames = new String[pairedDevices.size()];
+				String[] deviceKeys = new String[pairedDevices.size()];
+				int i = 0;
+				for (BluetoothDevice curr : pairedDevices) {
+					deviceNames[i] = curr.getName();
+					deviceKeys[i] = curr.getName();
+					i++;
+					boolean exists = false;
+					for (CharSequence entry : bluetooth.getEntries()) {
+						exists = entry.toString().equals(curr.getName());
+					}
+				}
+			}*/
+		}
+
+		@Override
+		public void onActivityResult(int requestCode, int resultCode, Intent data) {
+			if (requestCode == REQUEST_ENABLE_BT && resultCode == RESULT_OK) {
+				populateBTDevices();
+			}
+		}
+
+		@Override
         public boolean onOptionsItemSelected(MenuItem item) {
             int id = item.getItemId();
             if (id == android.R.id.home) {
@@ -358,26 +475,6 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
 					checkReplica.setSummary(R.string.pref_check_replica_description);
 					checkReplica.setKey("key_" + packageInfo.packageName + "_check_replica");
 
-                    SwitchPreference headphones = new SwitchPreference(this.getContext());
-                    headphones.setTitle(R.string.pref_headphones_on);
-                    headphones.setSummary(R.string.pref_headphones_on_description);
-                    headphones.setKey("key_" + packageInfo.packageName + "_headphones_on");
-
-                    SwitchPreference headset = new SwitchPreference(this.getContext());
-                    headset.setTitle(R.string.pref_headset_on);
-                    headset.setSummary(R.string.pref_headset_on_description);
-                    headset.setKey("key_" + packageInfo.packageName + "_headset_on");
-
-                    SwitchPreference bluetooth = new SwitchPreference(this.getContext());
-                    bluetooth.setTitle(R.string.pref_bluetooth_on);
-                    bluetooth.setSummary(R.string.pref_bluetooth_on_description);
-                    bluetooth.setKey("key_" + packageInfo.packageName + "_bluetooth_on");
-
-                    SwitchPreference screenOff = new SwitchPreference(this.getContext());
-                    screenOff.setTitle(R.string.pref_only_screen_off);
-                    screenOff.setSummary(R.string.pref_only_screen_off_description);
-					screenOff.setKey("key_" + packageInfo.packageName + "_only_screen_off");
-
 					EditTextPreference blacklistWordsInTitle = new EditTextPreference(this.getContext());
 					blacklistWordsInTitle.setTitle(R.string.pref_blacklist_words_title);
 					blacklistWordsInTitle.setSummary(R.string.pref_blacklist_words_title_description);
@@ -392,18 +489,18 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
 
 					pc.addPreference(useGeneral);
 					pc.addPreference(checkReplica);
-                    pc.addPreference(headphones);
-                    pc.addPreference(headset);
-                    pc.addPreference(bluetooth);
-                    pc.addPreference(screenOff);
 					pc.addPreference(blacklistWordsInTitle);
 					pc.addPreference(blacklistWordsInText);
 
-					screenOff.setDependency(useGeneral.getKey());
-					bluetooth.setDependency(useGeneral.getKey());
-					headset.setDependency(useGeneral.getKey());
+					PreferenceCategory log = new PreferenceCategory(this.getContext());
+					log.setTitle(R.string.pref_category_logs);
+					curr.addPreference(log);
+
+					for (EditTextPreference currLog : getLog(this.getContext(), packageInfo.packageName)) {
+						log.addPreference(currLog);
+					}
+
 					checkReplica.setDependency(useGeneral.getKey());
-					headphones.setDependency(useGeneral.getKey());
 				}
 			}
             setHasOptionsMenu(true);
@@ -426,6 +523,37 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
             isHome = true;
         }
     }
+
+	@NonNull
+	public static ArrayList<EditTextPreference> getLog(Context context, String packageName) {
+		try {
+			File log = new File(context.getFilesDir().getAbsolutePath(), packageName + ".log");
+			BufferedReader bfw = new BufferedReader(new FileReader(log));
+			ArrayList<EditTextPreference> erg = new ArrayList<>();
+			String line = "";
+			while ((line = bfw.readLine()) != null) {
+				String[] args = line.split(":");
+				if (args.length == 4) {
+					EditTextPreference curr = new EditTextPreference(context);
+					Calendar posted = Calendar.getInstance();
+					posted.setTimeInMillis(Long.parseLong(args[0]));
+					String date = posted.get(Calendar.DAY_OF_MONTH)
+							+ "." + posted.get(Calendar.MONTH)
+							+ "." + posted.get(Calendar.YEAR)
+							+ ">" + posted.get(Calendar.HOUR_OF_DAY)
+							+ ":" + posted.get(Calendar.MINUTE);
+					curr.setTitle(date + " status: " + args[1]);
+					curr.setSummary("\tTitle = " + args[2] + "\n\tText = " + args[3]);
+					curr.setEnabled(false);
+					erg.add(0, curr);
+				}
+			}
+			bfw.close();
+			return erg;
+		} catch (java.io.IOException ignored) {
+		}
+		return new ArrayList<>();
+	}
 
 	//show
 	public void showLoadingAnimation() {

@@ -12,8 +12,8 @@
     <string name="pref_profiles_description">Create and edit profiles for the apps on which notification reading is enabled</string>
 
     <!-- General settings -->
-    <string name="pref_check_replica">Check for Replica</string>
-    <string name="pref_check_replica_description">Check whether a notification is a replica of the last one and if so ignore it</string>
+
+    <string name="pref_category_run">Run configuration</string>
 
     <string name="pref_always_on">Always On</string>
     <string name="pref_always_on_description">Notifications will always be read out, this overrides any Profile settings</string>
@@ -25,13 +25,31 @@
     <string name="pref_headset_on_description">Notifications will be read out when a headset is plugged in</string>
 
     <string name="pref_bluetooth_on">Bluetooth Headset</string>
-    <string name="pref_bluetooth_on_description">Notifications will be read out when a Bluetooth Headset is plugged in</string>
+    <string name="pref_bluetooth_on_description">Notifications will be read out when a specified Bluetooth Headset is connected</string>
+
+    <string name="pref_wifi_on">Wi-Fi</string>
+    <string name="pref_wifi_on_description">Notifications will be read out when connected to a specified Wi-Fi</string>
 
     <string name="pref_only_screen_off">Screen off</string>
     <string name="pref_only_screen_off_description">Notifications will only be read out if the screen is off</string>
 
     <string name="pref_use_general">General</string>
     <string name="pref_use_general_description">Use the general preferences instead</string>
+
+    <string name="key_cat_devices">key_cat_devices</string>
+    <string name="pref_category_devices">Device Specific</string>
+
+    <string name="pref_bluetooth_devices">Specify Bluetooth Devices</string>
+
+    <string name="pref_wifi_devices">Specify Wi-Fi Devices</string>
+
+    <string name="pref_category_special">Special</string>
+
+    <string name="pref_check_replica">Check for Replica</string>
+    <string name="pref_check_replica_description">Check whether a notification is a replica of the last one and if so ignore it</string>
+
+    <string name="pref_log_description">Log the notifications for apps where LittleHelper is activated</string>
+    <string name="pref_log">Log Notifications</string>
 
     <!-- App Settings -->
     <string name="key_defaultTrue_title">Default value</string>
@@ -47,10 +65,10 @@
     <!-- App Profiles -->
 
     <string name="pref_blacklist_words_title">Blacklisted Words in notification title</string>
-    <string name="pref_blacklist_words_title_description">If one of these words occur in a notification-title, it won\'t be read out. Separate words by space</string>
+    <string name="pref_blacklist_words_title_description">If one of these words occur in a notification-title, it won\'t be read out. Separate words by comma</string>
 
     <string name="pref_blacklist_words_text">Blacklisted Words in notification text</string>
-    <string name="pref_blacklist_words_text_description">If one of these words occur in a notification-text, it won\'t be read out. Separate words by space</string>
+    <string name="pref_blacklist_words_text_description">If one of these words occur in a notification-text, it won\'t be read out. Separate words by comma</string>
 
     <!-- Strings for Main Activity -->
     <string name="title_activity_main">MainActivity</string>
@@ -64,5 +82,9 @@
     <string name="start_btn">Start Listener</string>
     <string name="kill_btn">Kill Listener</string>
     <string name="version">1.0</string>
+    <string name="pref_category_logs">Logs</string>
+    <string name="del_btn">Delete all Logfiles</string>
+    <string name="package_hint">The package to view the log for</string>
+    <string name="view_log">Show Log</string>
 
 </resources>

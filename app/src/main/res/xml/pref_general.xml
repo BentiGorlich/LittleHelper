@@ -1,38 +1,60 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <SwitchPreference
-        android:defaultValue="false"
-        android:key="key_always_on"
-        android:summary="@string/pref_always_on_description"
-        android:title="@string/pref_always_on"
-        android:disableDependentsState="true" />
-    <SwitchPreference
-        android:defaultValue="true"
-        android:key="key_check_replica"
-        android:summary="@string/pref_check_replica_description"
-        android:title="@string/pref_check_replica" />
-    <SwitchPreference
-        android:defaultValue="true"
-        android:key="key_headphones_on"
-        android:summary="@string/pref_headphones_on_description"
-        android:title="@string/pref_headphones_on"
-        android:dependency="key_always_on" />
-    <SwitchPreference
-        android:defaultValue="true"
-        android:key="key_headset_on"
-        android:summary="@string/pref_headset_on_description"
-        android:title="@string/pref_headset_on"
-        android:dependency="key_always_on" />
-    <SwitchPreference
-        android:defaultValue="true"
-        android:key="key_bluetooth_on"
-        android:summary="@string/pref_bluetooth_on_description"
-        android:title="@string/pref_bluetooth_on"
-        android:dependency="key_always_on" />
-    <SwitchPreference
-        android:defaultValue="false"
-        android:title="@string/pref_only_screen_off"
-        android:summary="@string/pref_only_screen_off_description"
-        android:key="key_only_screen_off"
-        android:dependency="key_always_on" />
+    <PreferenceCategory android:title="@string/pref_category_run">
+
+        <SwitchPreference
+            android:defaultValue="false"
+            android:disableDependentsState="true"
+            android:key="key_always_on"
+            android:summary="@string/pref_always_on_description"
+            android:title="@string/pref_always_on" />
+        <SwitchPreference
+            android:defaultValue="true"
+            android:dependency="key_always_on"
+            android:key="key_headphones_on"
+            android:summary="@string/pref_headphones_on_description"
+            android:title="@string/pref_headphones_on" />
+        <SwitchPreference
+            android:defaultValue="true"
+            android:dependency="key_always_on"
+            android:key="key_headset_on"
+            android:summary="@string/pref_headset_on_description"
+            android:title="@string/pref_headset_on" />
+        <SwitchPreference
+            android:defaultValue="true"
+            android:dependency="key_always_on"
+            android:key="key_bluetooth_on"
+            android:summary="@string/pref_bluetooth_on_description"
+            android:title="@string/pref_bluetooth_on" />
+        <SwitchPreference
+            android:defaultValue="true"
+            android:dependency="key_always_on"
+            android:key="key_wifi_on"
+            android:summary="@string/pref_wifi_on_description"
+            android:title="@string/pref_wifi_on" />
+        <SwitchPreference
+            android:defaultValue="false"
+            android:dependency="key_always_on"
+            android:key="key_only_screen_off"
+            android:summary="@string/pref_only_screen_off_description"
+            android:title="@string/pref_only_screen_off" />
+    </PreferenceCategory>
+    <PreferenceCategory
+        android:title="@string/pref_category_devices"
+        android:key="@string/key_cat_devices">
+
+    </PreferenceCategory>
+    <PreferenceCategory android:title="@string/pref_category_special">
+
+        <SwitchPreference
+            android:defaultValue="true"
+            android:key="key_log"
+            android:summary="@string/pref_log_description"
+            android:title="@string/pref_log" />
+        <SwitchPreference
+            android:defaultValue="true"
+            android:key="key_check_replica"
+            android:summary="@string/pref_check_replica_description"
+            android:title="@string/pref_check_replica" />
+    </PreferenceCategory>
 </PreferenceScreen>

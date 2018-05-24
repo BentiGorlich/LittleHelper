@@ -4,6 +4,7 @@ import android.annotation.TargetApi;
 import android.app.Notification;
 import android.app.PendingIntent;
 import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -11,11 +12,13 @@ import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.media.AudioAttributes;
 import android.media.AudioManager;
+import android.net.NetworkInfo;
+import android.net.wifi.WifiInfo;
+import android.net.wifi.WifiManager;
 import android.os.Build;
 import android.os.IBinder;
 import android.os.PowerManager;
 import android.preference.PreferenceManager;
-import android.preference.PreferenceScreen;
 import android.service.notification.NotificationListenerService;
 import android.service.notification.StatusBarNotification;
 import android.speech.tts.TextToSpeech;
@@ -25,9 +28,15 @@ import android.util.Log;
 
 import com.vdurmont.emoji.EmojiParser;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Locale;
+import java.util.Set;
 
+import static android.bluetooth.BluetoothDevice.EXTRA_DEVICE;
 import static android.bluetooth.BluetoothProfile.A2DP;
 import static android.bluetooth.BluetoothProfile.EXTRA_STATE;
 import static android.bluetooth.BluetoothProfile.HEADSET;
@@ -41,6 +50,9 @@ import static android.media.AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK;
 import static android.media.AudioManager.AUDIOFOCUS_LOSS;
 import static android.media.AudioManager.AUDIOFOCUS_LOSS_TRANSIENT;
 import static android.media.AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK;
+import static android.net.ConnectivityManager.TYPE_WIFI;
+import static android.net.wifi.WifiManager.EXTRA_NETWORK_INFO;
+import static android.net.wifi.WifiManager.NETWORK_STATE_CHANGED_ACTION;
 import static android.speech.tts.TextToSpeech.ACTION_TTS_QUEUE_PROCESSING_COMPLETED;
 
 public class NotificationListener extends NotificationListenerService implements TextToSpeech.OnInitListener {
@@ -53,11 +65,12 @@ public class NotificationListener extends NotificationListenerService implements
 
     private boolean ttsInit = false;
     private boolean isHeadsetPluggedIn = false;
-    private boolean isBluetoothPluggedIn = false;
+	private boolean isBluetoothConnected = false;
     private boolean isMicPluggedIn = false;
     private boolean isRunning = true;
     private boolean isManuallyStarted = false;
     private boolean isScreenOff = false;
+	private boolean isWifiConnected = false;
 
     private PowerManager.WakeLock wake;
 
@@ -74,6 +87,7 @@ public class NotificationListener extends NotificationListenerService implements
 	private TTSDoneListener receiver_tts_done = new TTSDoneListener();
     private ScreenChangeListener receiver_screenChange = new ScreenChangeListener();
 	private PreferenceChangeListener preferenceChangeListener = new PreferenceChangeListener();
+	private WiFiChangeListener receiver_wifi = new WiFiChangeListener();
 
     private Intent STOP_INTENT;
     private PendingIntent STOP_PENDING_INTENT;
@@ -88,12 +102,16 @@ public class NotificationListener extends NotificationListenerService implements
 		PreferenceManager.getDefaultSharedPreferences(this).registerOnSharedPreferenceChangeListener(preferenceChangeListener);
 
         System.out.println("NotificationListener has started");
-        isBluetoothPluggedIn =
+		isBluetoothConnected =
                 BluetoothAdapter.getDefaultAdapter().getProfileConnectionState(HEADSET) == BluetoothAdapter.STATE_CONNECTED
                         || BluetoothAdapter.getDefaultAdapter().getProfileConnectionState(A2DP) == BluetoothAdapter.STATE_CONNECTED
         ;
 
-        updateNotifications();
+		SharedPreferences shp = PreferenceManager.getDefaultSharedPreferences(this);
+		WifiInfo wifiInfo = getApplicationContext().getSystemService(WifiManager.class).getConnectionInfo();
+		String ssid = wifiInfo.getSSID();
+		Log.d(TAG, ssid);
+		isWifiConnected = shp.getBoolean("key_wifi_device_" + ssid, false);
 
         Log.i("toolbar", "sent Notification");
 
@@ -117,6 +135,11 @@ public class NotificationListener extends NotificationListenerService implements
         filter = new IntentFilter(Intent.ACTION_SCREEN_OFF);
         filter.addAction(Intent.ACTION_SCREEN_ON);
         this.registerReceiver(receiver_screenChange, filter);
+
+		filter = new IntentFilter(NETWORK_STATE_CHANGED_ACTION);
+		this.registerReceiver(receiver_wifi, filter);
+
+		updateNotifications();
     }
 
     @Override
@@ -127,6 +150,7 @@ public class NotificationListener extends NotificationListenerService implements
         unregisterReceiver(this.receiver_bluetooth);
 		unregisterReceiver(this.receiver_screenChange);
 		unregisterReceiver(this.receiver_tts_done);
+		unregisterReceiver(this.receiver_wifi);
 		PreferenceManager.getDefaultSharedPreferences(this).unregisterOnSharedPreferenceChangeListener(preferenceChangeListener);
 		tts.shutdown();
         abandonAudioFocus();
@@ -160,6 +184,7 @@ public class NotificationListener extends NotificationListenerService implements
         boolean withHeadphonesOn = prefs.getBoolean("key_headphones_on", true);
         boolean withHeadsetOn = prefs.getBoolean("key_headset_on", true);
         boolean withBluetoothHeadsetOn = prefs.getBoolean("key_bluetooth_on", true);
+		boolean withWiFiOn = prefs.getBoolean("key_wifi_on", true);
 		boolean onlyWhenScreenIsOff = prefs.getBoolean("key_only_screen_off", false);
 
 		return connected && ttsInit && isRunning &&
@@ -171,87 +196,27 @@ public class NotificationListener extends NotificationListenerService implements
 						(alwaysOn)//always on
 								|| (withHeadphonesOn && isHeadsetPluggedIn && !isMicPluggedIn)// headphones
 								|| (withHeadsetOn && isHeadsetPluggedIn && isMicPluggedIn)//headset
-								|| (withBluetoothHeadsetOn && isBluetoothPluggedIn)//bluetooth
+								|| (withBluetoothHeadsetOn && isBluetoothConnected)//bluetooth
+								|| (withWiFiOn && isWifiConnected) //wifi
 								|| (isManuallyStarted)
 				);
 	}
-
-	private boolean checkForRunningConditions(String packageName) {
-		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
-		boolean alwaysOn = prefs.getBoolean("key_always_on", false);
-		boolean useGeneralPrefs = prefs.getBoolean("key_" + packageName + "_use_general", true);
-
-		boolean res;
-		if (!useGeneralPrefs) {
-			boolean withHeadphonesOn = prefs.getBoolean("key_" + packageName + "_headphones_on", prefs.getBoolean("key_headphones_on", true));
-			boolean withHeadsetOn = prefs.getBoolean("key_" + packageName + "_headset_on", prefs.getBoolean("key_headset_on", true));
-			boolean withBluetoothHeadsetOn = prefs.getBoolean("key_" + packageName + "_bluetooth_on", prefs.getBoolean("key_bluetooth_on", true));
-			boolean onlyWhenScreenIsOff = prefs.getBoolean("key_" + packageName + "_only_screen_off", prefs.getBoolean("key_only_screen_off", false));
-			res = connected && ttsInit && isRunning &&
-					(
-							!onlyWhenScreenIsOff || isScreenOff
-					)
-					&&
-					(
-							(alwaysOn)//always on
-									|| (withHeadphonesOn && isHeadsetPluggedIn && !isMicPluggedIn)// headphones
-									|| (withHeadsetOn && isHeadsetPluggedIn && isMicPluggedIn)//headset
-									|| (withBluetoothHeadsetOn && isBluetoothPluggedIn)//bluetooth
-									|| (isManuallyStarted)
-					);
-
-			Log.d("check", "res: " + res);
-			Log.d("check", "alwaysOn: " + alwaysOn);
-			Log.d("check", "withHeadphonesOn: " + withHeadphonesOn);
-			Log.d("check", "isHeadsetPluggedIn: " + isHeadsetPluggedIn);
-			Log.d("check", "withHeadsetOn: " + withHeadsetOn);
-			Log.d("check", "isMicPluggedIn: " + isMicPluggedIn);
-			Log.d("check", "withBluetoothHeadsetOn: " + withBluetoothHeadsetOn);
-			Log.d("check", "isBluetoothPluggedIn: " + isBluetoothPluggedIn);
-			Log.d("check", "onlyWhenScreenIsOff: " + onlyWhenScreenIsOff);
-			Log.d("check", "isScreenOff: " + isScreenOff);
-		} else {
-			boolean withHeadphonesOn = prefs.getBoolean("key_headphones_on", true);
-			boolean withHeadsetOn = prefs.getBoolean("key_headset_on", true);
-			boolean withBluetoothHeadsetOn = prefs.getBoolean("key_bluetooth_on", true);
-			boolean onlyWhenScreenIsOff = prefs.getBoolean("key_only_screen_off", false);
-
-			res = connected && ttsInit && isRunning &&
-					(
-							!onlyWhenScreenIsOff || isScreenOff
-					)
-					&&
-					(
-							(alwaysOn)//always on
-									|| (withHeadphonesOn && isHeadsetPluggedIn && !isMicPluggedIn)// headphones
-									|| (withHeadsetOn && isHeadsetPluggedIn && isMicPluggedIn)//headset
-									|| (withBluetoothHeadsetOn && isBluetoothPluggedIn)//bluetooth
-									|| (isManuallyStarted)
-					);
-
-			Log.d("check", "res: " + res);
-			Log.d("check", "alwaysOn: " + alwaysOn);
-			Log.d("check", "withHeadphonesOn: " + withHeadphonesOn);
-			Log.d("check", "isHeadsetPluggedIn: " + isHeadsetPluggedIn);
-			Log.d("check", "withHeadsetOn: " + withHeadsetOn);
-			Log.d("check", "isMicPluggedIn: " + isMicPluggedIn);
-			Log.d("check", "withBluetoothHeadsetOn: " + withBluetoothHeadsetOn);
-			Log.d("check", "isBluetoothPluggedIn: " + isBluetoothPluggedIn);
-			Log.d("check", "onlyWhenScreenIsOff: " + onlyWhenScreenIsOff);
-			Log.d("check", "isScreenOff: " + isScreenOff);
-		}
-
-		return res;
-    }
 
     @Override
     public void onNotificationPosted(StatusBarNotification note) {
         try {
 			Log.d(TAG, "checking " + note.getPackageName());
-			if (checkForRunningConditions(note.getPackageName())
-                    && checkPreferences(note.getPackageName())
+			boolean isActivatedForPackage = checkPreferences(note.getPackageName());
+			SharedPreferences shp = PreferenceManager.getDefaultSharedPreferences(this);
+			if (shp.getBoolean("key_log", true)) {
+				if (isActivatedForPackage) {
+					log(note);
+				}
+			}
+			if (checkForRunningConditions()
+					&& isActivatedForPackage
                     && !note.getPackageName().equals(this.getPackageName())
-				//&& !note.isOngoing()
+					&& !note.isOngoing()
 					) {
                 readNotification(note);
                 updateNotifications();
@@ -259,6 +224,45 @@ public class NotificationListener extends NotificationListenerService implements
         } catch (NullPointerException ignored) {
         }
     }
+
+	/**
+	 * This function logs the given notification to a file named after the package name
+	 *
+	 * @param note the notification to log
+	 */
+	private void log(StatusBarNotification note) {
+		File logfile = new File(this.getApplicationContext().getFilesDir(), note.getPackageName() + ".log");
+		try {
+			if (!logfile.exists()) {
+				Log.i(TAG, String.valueOf(logfile.createNewFile()));
+			}
+			String title = note.getNotification().extras.getCharSequence(Notification.EXTRA_TITLE).toString();
+			String text = note.getNotification().extras.getCharSequence(Notification.EXTRA_TEXT).toString();
+			String toWrite = title.replaceAll(":", "") + ":" + text.replaceAll(":", "");
+			String blacklisted = "";
+			if (checkForBlacklistedWordsInText(note.getPackageName(), title + text) || checkForBlacklistedWordsInTitle(note.getPackageName(), title + text)) {
+				blacklisted += "blacklisted";
+			}
+			SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+			String replica = "";
+			if (checkReplicate(note) && prefs.getBoolean("key_" + note.getPackageName() + "_check_replica", prefs.getBoolean("key_check_replica", true))) {
+				replica = "replica";
+			}
+			String status = blacklisted;
+			if (status.length() > 0 && replica.length() > 0) {
+				status += ", " + replica;
+			} else if (status.length() == 0 && replica.length() > 0) {
+				status = replica;
+			}
+			toWrite = Calendar.getInstance().getTimeInMillis() + ":" + status + ":" + toWrite;
+			FileWriter fw = new FileWriter(logfile, true);
+			fw.write(toWrite);
+			fw.write("\n");
+			fw.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
 
 	/**
 	 * @param packageName the packageName to check conditions for
@@ -311,9 +315,10 @@ public class NotificationListener extends NotificationListenerService implements
 		SharedPreferences shp = PreferenceManager.getDefaultSharedPreferences(this);
 		String words = shp.getString("key_" + packageName + "_blacklist_words_title", "");
 		Log.d(TAG, "blacklisted words: " + words);
-		String[] blacklistedWords = words.split(" ");
+		Log.d(TAG, text);
+		String[] blacklistedWords = words.split(",");
 		for (String word : blacklistedWords) {
-			Log.d(TAG, text + " contains " + word + "? " + (text.toLowerCase().contains(word.toLowerCase()) && !word.equals("")));
+			Log.d(TAG, " contains " + word + "? " + (text.toLowerCase().contains(word.toLowerCase()) && !word.equals("")));
 			if (text.toLowerCase().contains(word.toLowerCase()) && !word.equals(""))
 				return true;
 		}
@@ -329,9 +334,10 @@ public class NotificationListener extends NotificationListenerService implements
 		SharedPreferences shp = PreferenceManager.getDefaultSharedPreferences(this);
 		String words = shp.getString("key_" + packageName + "_blacklist_words_text", "");
 		Log.d(TAG, "blacklisted words: " + words);
-		String[] blacklistedWords = words.split(" ");
+		String[] blacklistedWords = words.split(",");
+		Log.d(TAG, text);
 		for (String word : blacklistedWords) {
-			Log.d(TAG, text + " contains " + word + "? " + (text.toLowerCase().contains(word.toLowerCase()) && !word.equals("")));
+			Log.d(TAG, " contains " + word + "? " + (text.toLowerCase().contains(word.toLowerCase()) && !word.equals("")));
 			if (text.toLowerCase().contains(word.toLowerCase()) && !word.equals(""))
 				return true;
 		}
@@ -432,8 +438,11 @@ public class NotificationListener extends NotificationListenerService implements
         }
         if (isMicPluggedIn && isHeadsetPluggedIn) {
             text += "- headset is plugged in\n";
-        }
-        if (isBluetoothPluggedIn) {
+		}
+		if (isWifiConnected) {
+			text += "- Wi-Fi is connected\n";
+		}
+		if (isBluetoothConnected) {
             text += "- Bluetooth is connected\n";
         }
         if (connected) {
@@ -498,10 +507,21 @@ public class NotificationListener extends NotificationListenerService implements
                 if (intent.getAction().equals(android.bluetooth.BluetoothHeadset.ACTION_CONNECTION_STATE_CHANGED)
                         || intent.getAction().equals(android.bluetooth.BluetoothA2dp.ACTION_CONNECTION_STATE_CHANGED)) {
                     if (intent.getIntExtra(EXTRA_STATE, 0) == STATE_CONNECTED) {
-                        isBluetoothPluggedIn = true;
-                        Log.i("BluetoothConnectReceiver", "Bluetooth is connected");
+						SharedPreferences shp = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+						String name = ((BluetoothDevice) intent.getParcelableExtra(EXTRA_DEVICE)).getName();
+						Set<String> wifi_devices = shp.getStringSet("key_bluetooth_devices", null);
+						Log.d("BluetoothChangeListener", "bluetooth is connected to " + name);
+						if (wifi_devices != null) {
+							for (String device : wifi_devices) {
+								if (device.equals(name.replace("\"", ""))) {
+									isBluetoothConnected = true;
+									Log.d("BluetoothChangeListener", "bluetooth-device is on list");
+									break;
+								}
+							}
+						}
                     } else if (intent.getIntExtra(EXTRA_STATE, 0) == STATE_DISCONNECTED) {
-                        isBluetoothPluggedIn = false;
+						isBluetoothConnected = false;
                         Log.i("BluetoothConnectReceiver", "Bluetooth is disconnected");
                     }
                 }
@@ -605,6 +625,42 @@ public class NotificationListener extends NotificationListenerService implements
 
 		@Override
 		public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
+			if (key.equals("key_wifi_devices") || key.equals("key_bluetooth_devices")) {
+				Log.d(TAG, "key: " + key + " value: " + sharedPreferences.getStringSet(key, null));
+			}
+			updateNotifications();
+		}
+	}
+
+	private class WiFiChangeListener extends BroadcastReceiver {
+
+		@Override
+		public void onReceive(Context context, Intent intent) {
+			Log.d("WiFiChangeListener", intent.getAction());
+			if (intent.getAction().equals(NETWORK_STATE_CHANGED_ACTION)) {
+				NetworkInfo netInfo = intent.getParcelableExtra(EXTRA_NETWORK_INFO);
+				if (netInfo.getType() == TYPE_WIFI) {
+					if (netInfo.isConnectedOrConnecting()) {
+						SharedPreferences shp = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+						WifiInfo wifiInfo = getApplicationContext().getSystemService(WifiManager.class).getConnectionInfo();
+						String ssid = wifiInfo.getSSID();
+						Set<String> wifi_devices = shp.getStringSet("key_wifi_devices", null);
+						Log.d("WiFiChangeListener", "wifi is connected to " + ssid);
+						if (wifi_devices != null) {
+							for (String device : wifi_devices) {
+								if (device.equals(ssid.replace("\"", ""))) {
+									isWifiConnected = true;
+									Log.d("WiFiChangeListener", "wifi is on list");
+									break;
+								}
+							}
+						}
+					} else {
+						isWifiConnected = false;
+						Log.d("WiFiChangeListener", "wifi is disconnected");
+					}
+				}
+			}
 			updateNotifications();
 		}
 	}

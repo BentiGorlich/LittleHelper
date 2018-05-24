@@ -16,5 +16,17 @@
         android:title="@string/action_settings"
         android:icon="@android:drawable/ic_menu_preferences"
         app:showAsAction="ifRoom" />
+    <item
+        android:title="@string/del_btn"
+        android:id="@+id/action_delete_logs"
+        app:showAsAction="never" />
+    <item
+        android:title="@string/start_btn"
+        android:id="@+id/action_start_listener"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/action_kill_listener"
+        app:showAsAction="never"
+        android:title="@string/kill_btn" />
 
 </menu>
