@@ -347,36 +347,36 @@ public class NotificationListener extends NotificationListenerService implements
     private void readNotification(StatusBarNotification note) {
 		Log.d(TAG, "in readNotification");
         SharedPreferences shp = PreferenceManager.getDefaultSharedPreferences(this);
-		boolean valid = true;
-		if (shp.getBoolean("key_" + note.getPackageName() + "_check_replica", shp.getBoolean("key_check_replica", true))) {
-            valid = !checkReplicate(note);
-            saveLastNotification(note);
-        }
-		Log.d(TAG, "valid: " + valid);
-        if (valid) {
-            String title = note.getNotification().extras.getCharSequence(Notification.EXTRA_TITLE).toString();
-			title = EmojiParser.removeAllEmojis(title);
-            String text = note.getNotification().extras.getCharSequence(Notification.EXTRA_TEXT).toString();
-			text = EmojiParser.removeAllEmojis(text);
-			String toRead = title + ": " + text;
-			if (!checkForBlacklistedWordsInTitle(note.getPackageName(), title) && !checkForBlacklistedWordsInText(note.getPackageName(), text)) {
-				Log.d(TAG, "not blacklisted");
-				if (!acl.hasAudioFocus()) {
-					requestAudioFocus();
-					PowerManager powerManager = (PowerManager) getSystemService(POWER_SERVICE);
-					if (powerManager != null) {
-						wake = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "ReadingNotificationOut");
-						if (wake != null) {
-							wake.acquire();
-						}
+		String title = note.getNotification().extras.getCharSequence(Notification.EXTRA_TITLE).toString();
+		title = EmojiParser.removeAllEmojis(title);
+		String text = note.getNotification().extras.getCharSequence(Notification.EXTRA_TEXT).toString();
+		text = EmojiParser.removeAllEmojis(text);
+		String toRead = title + ": " + text;
+		if (!checkForBlacklistedWordsInTitle(note.getPackageName(), title) && !checkForBlacklistedWordsInText(note.getPackageName(), text)) {
+			Log.d(TAG, "not blacklisted");
+			if (!acl.hasAudioFocus()) {
+				requestAudioFocus();
+				PowerManager powerManager = (PowerManager) getSystemService(POWER_SERVICE);
+				if (powerManager != null) {
+					wake = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "ReadingNotificationOut");
+					if (wake != null) {
+						wake.acquire();
 					}
 				}
+			}
+			boolean valid = true;
+			if (shp.getBoolean("key_" + note.getPackageName() + "_check_replica", shp.getBoolean("key_check_replica", true))) {
+				valid = !checkReplicate(note);
+				saveLastNotification(note);
+			}
+			Log.d(TAG, "valid: " + valid);
+			if (valid) {
 				Log.i(TAG, "new Notification: " + toRead);
 				tts.speak(toRead, TextToSpeech.QUEUE_ADD, null);
-			} else {
-				Log.d(TAG, "blacklisted");
 			}
-        }
+		} else {
+			Log.d(TAG, "blacklisted");
+		}
     }
 
     @TargetApi(Build.VERSION_CODES.N)
