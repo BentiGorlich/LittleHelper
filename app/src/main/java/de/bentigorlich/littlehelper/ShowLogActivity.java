@@ -12,7 +12,7 @@ import java.io.IOException;
 
 public class ShowLogActivity extends AppCompatActivity {
 
-	EditText log;
+	private EditText log;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -48,6 +48,7 @@ public class ShowLogActivity extends AppCompatActivity {
 
 	@Override
 	public void onBackPressed() {
+		super.onBackPressed();
 		startActivity(new Intent(this, MainActivity.class));
 	}
 }

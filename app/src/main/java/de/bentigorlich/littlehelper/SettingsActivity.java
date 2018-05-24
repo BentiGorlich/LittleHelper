@@ -26,6 +26,7 @@ import android.support.annotation.NonNull;
 import android.support.v7.app.ActionBar;
 import android.preference.PreferenceFragment;
 import android.preference.PreferenceManager;
+import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.RelativeLayout;
@@ -40,6 +41,8 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Set;
+
+import static android.content.ContentValues.TAG;
 
 /**
  * A {@link PreferenceActivity} that presents a set of application settings. On
@@ -327,13 +330,7 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
 					Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
 					startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
 				} else {
-					if (bluetooth == null) {
-						populateBTDevices();
-					} else if (bluetooth.getEntries() == null) {
-						populateBTDevices();
-					} else if (bluetooth.getEntries().length == 0) {
-						populateBTDevices();
-					}
+					populateBTDevices();
 				}
 			}
 
@@ -378,20 +375,6 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
 			}
 			bluetooth.setEntries(deviceNames);
 			bluetooth.setEntryValues(deviceKeys);
-				/*else{
-				String[] deviceNames = new String[pairedDevices.size()];
-				String[] deviceKeys = new String[pairedDevices.size()];
-				int i = 0;
-				for (BluetoothDevice curr : pairedDevices) {
-					deviceNames[i] = curr.getName();
-					deviceKeys[i] = curr.getName();
-					i++;
-					boolean exists = false;
-					for (CharSequence entry : bluetooth.getEntries()) {
-						exists = entry.toString().equals(curr.getName());
-					}
-				}
-			}*/
 		}
 
 		@Override

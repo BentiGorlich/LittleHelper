@@ -28,5 +28,9 @@
         android:id="@+id/action_kill_listener"
         app:showAsAction="never"
         android:title="@string/kill_btn" />
+    <item
+        android:id="@+id/action_open_settings"
+        app:showAsAction="never"
+        android:title="@string/fix_btn" />
 
 </menu>

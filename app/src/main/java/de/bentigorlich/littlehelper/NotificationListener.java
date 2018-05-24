@@ -344,9 +344,19 @@ public class NotificationListener extends NotificationListenerService implements
 		return false;
 	}
 
-    private void readNotification(StatusBarNotification note) {
+	/**
+	 * Reads out a notification via Googles tts and removes all emotes first
+	 * condition is given cia preferences:
+	 * --> check for blacklisted words
+	 * --> request audiofocus if not already occupied
+	 * --> acquire wakelock if it's not null
+	 * --> check if note is replica (if so desired by prefs)
+	 *
+	 * @param note the notification to read out
+	 */
+	private void readNotification(StatusBarNotification note) {
 		Log.d(TAG, "in readNotification");
-        SharedPreferences shp = PreferenceManager.getDefaultSharedPreferences(this);
+		SharedPreferences shp = PreferenceManager.getDefaultSharedPreferences(this);
 		String title = note.getNotification().extras.getCharSequence(Notification.EXTRA_TITLE).toString();
 		title = EmojiParser.removeAllEmojis(title);
 		String text = note.getNotification().extras.getCharSequence(Notification.EXTRA_TEXT).toString();
@@ -365,9 +375,19 @@ public class NotificationListener extends NotificationListenerService implements
 				}
 			}
 			boolean valid = true;
-			if (shp.getBoolean("key_" + note.getPackageName() + "_check_replica", shp.getBoolean("key_check_replica", true))) {
-				valid = !checkReplicate(note);
-				saveLastNotification(note);
+			//if should use general -> check if general_check_replica is true -> if so check for replica
+			if (shp.getBoolean("key_" + note.getPackageName() + "_use_general", true)) {
+				if (shp.getBoolean("key_check_replica", true)) {
+					valid = !checkReplicate(note);
+					saveLastNotification(note);
+				}
+			}
+			//if not general check app specific prefs and if so -> check for replica
+			else {
+				if (shp.getBoolean("key_" + note.getPackageName() + "_check_replica", shp.getBoolean("key_check_replica", true))) {
+					valid = !checkReplicate(note);
+					saveLastNotification(note);
+				}
 			}
 			Log.d(TAG, "valid: " + valid);
 			if (valid) {
@@ -377,7 +397,7 @@ public class NotificationListener extends NotificationListenerService implements
 		} else {
 			Log.d(TAG, "blacklisted");
 		}
-    }
+	}
 
     @TargetApi(Build.VERSION_CODES.N)
     private void requestAudioFocus() {

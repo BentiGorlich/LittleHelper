@@ -86,5 +86,6 @@
     <string name="del_btn">Delete all Logfiles</string>
     <string name="package_hint">The package to view the log for</string>
     <string name="view_log">Show Log</string>
+    <string name="nologs_warning">No Logs to show yet.\nMaybe you deactivated it in the settings...</string>
 
 </resources>

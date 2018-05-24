@@ -1,14 +1,18 @@
 package de.bentigorlich.littlehelper;
 
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.preference.EditTextPreference;
 import android.provider.Settings;
+import android.support.constraint.ConstraintLayout;
 import android.support.design.widget.TabLayout;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.text.Editable;
 import android.util.Log;
 import android.view.ContextMenu;
 import android.view.Menu;
@@ -33,10 +37,7 @@ import static android.view.Gravity.FILL;
 
 public class MainActivity extends AppCompatActivity {
 
-	TextView status;
-	Button btn_fix;
-
-	TabLayout logtabs;
+	private TabLayout logtabs;
 
     int id = 0;
 
@@ -47,15 +48,7 @@ public class MainActivity extends AppCompatActivity {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 		Log.i("toolbar", "started");
-
-		status = (TextView) findViewById(R.id.status_text);
-		btn_fix = (Button) findViewById(R.id.fix_btn);
 		logtabs = (TabLayout) findViewById(R.id.logTabs);
-
-		btn_fix.setOnClickListener(v -> {
-			Intent intent = new Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS);
-			startActivity(intent);
-		});
 
 		logtabs.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
 			@Override
@@ -92,6 +85,11 @@ public class MainActivity extends AppCompatActivity {
 		return super.onContextItemSelected(item);
 	}
 
+	/**
+	 * load the log file associated with the tab-name
+	 *
+	 * @param tab the tab containing the name
+	 */
 	private void populateForTab(TabLayout.Tab tab) {
 		for (String fileName : fileList()) {
 			String packageName = fileName.substring(0, fileName.length() - 4);
@@ -107,7 +105,7 @@ public class MainActivity extends AppCompatActivity {
 					while ((line = bfr.readLine()) != null) {
 						String[] args = line.split(":");
 						if (args.length == 4) {
-							EditText curr = new EditText(getApplicationContext());
+							TextView curr = new TextView(getApplicationContext());
 							Calendar posted = Calendar.getInstance();
 							posted.setTimeInMillis(Long.parseLong(args[0]));
 							String date = posted.get(Calendar.DAY_OF_MONTH)
@@ -116,7 +114,8 @@ public class MainActivity extends AppCompatActivity {
 									+ ">" + posted.get(Calendar.HOUR_OF_DAY)
 									+ ":" + posted.get(Calendar.MINUTE);
 							curr.setText(date + " status: " + args[1] + "\n\tTitle = " + args[2] + "\n\tText = " + args[3]);
-							curr.setEnabled(false);
+							curr.setTextSize(14);
+
 							logView.addView(curr, 0);
 						}
 					}
@@ -142,23 +141,31 @@ public class MainActivity extends AppCompatActivity {
 				TabLayout.Tab curr = logtabs.newTab();
 				curr.setText(appName);
 				logtabs.addTab(curr);
-			} catch (PackageManager.NameNotFoundException e) {
-				e.printStackTrace();
+			} catch (PackageManager.NameNotFoundException ignored) {
 			}
 		}
-
-		populateForTab(logtabs.getTabAt(logtabs.getSelectedTabPosition()));
-
-		boolean hasPermission = NotificationListener.connected;
-		Log.i(TAG, "Permission to read notifications: " + String.valueOf(hasPermission));
-		if (hasPermission) {
-			btn_fix.setVisibility(View.INVISIBLE);
-			status.setText(R.string.permission_granted);
-			status.setTextColor(Color.GREEN);
+		if (logtabs.getTabCount() == 0) {
+			TextView nologs = new TextView(this);
+			nologs.setText(R.string.nologs_warning);
+			LinearLayout logView = (LinearLayout) findViewById(R.id.logView);
+			logView.removeAllViews();
+			logView.addView(nologs);
 		} else {
-			btn_fix.setVisibility(View.VISIBLE);
-			status.setText(R.string.permission_denied);
-			status.setTextColor(Color.RED);
+			populateForTab(logtabs.getTabAt(logtabs.getSelectedTabPosition()));
+		}
+
+		if (!NotificationListener.connected) {
+			AlertDialog.Builder builder = new AlertDialog.Builder(this);
+			builder.setTitle("Permission missing...");
+			builder.setMessage("The permission for reading notification is missing. You wanna fix that?!");
+			builder.setPositiveButton("Open Settings", (dialog, which) -> {
+				Intent intent = new Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS);
+				startActivity(intent);
+			});
+			builder.setNegativeButton("No I want to stay boring", (dialog, which) -> {
+				dialog.dismiss();
+			});
+			builder.create().show();
 		}
 	}
 
@@ -189,7 +196,7 @@ public class MainActivity extends AppCompatActivity {
 				Log.i(TAG, "Deleting all log files...");
 				File[] log_files = getFilesDir().listFiles();
 				for (File curr : log_files) {
-					curr.delete();
+					boolean ignored = curr.delete();
 					Log.d(TAG, "Deleted: " + curr.getName());
 				}
 				refresh();
@@ -202,6 +209,11 @@ public class MainActivity extends AppCompatActivity {
 				Log.i(TAG, "Start Service");
 				startService(new Intent(this, NotificationListener.class));
 				break;
+			case R.id.action_open_settings:
+				Log.i(TAG, "Open notification listener settings");
+				Intent intent = new Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS);
+				startActivity(intent);
+				break;
 		}
 
 		return super.onOptionsItemSelected(item);
@@ -209,6 +221,7 @@ public class MainActivity extends AppCompatActivity {
 
 	@Override
 	public void onBackPressed() {
+		super.onBackPressed();
 		finish();
 	}
 }
