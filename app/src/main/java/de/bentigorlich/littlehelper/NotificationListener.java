@@ -458,7 +458,7 @@ public class NotificationListener extends NotificationListenerService implements
         START_INTENT.setAction(START_INTENT_ACTION);
         START_PENDING_INTENT = PendingIntent.getBroadcast(getApplicationContext(), (int) System.currentTimeMillis(), START_INTENT, 0);
 
-		NotificationCompat.Builder builder = new NotificationCompat.Builder(this, "All");
+		NotificationCompat.Builder builder = new NotificationCompat.Builder(this, getString(R.string.channel_id));
         String text = "";
         String title;
         if (checkForRunningConditions()) {
