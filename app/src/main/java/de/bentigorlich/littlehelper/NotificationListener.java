@@ -505,6 +505,7 @@ public class NotificationListener extends NotificationListenerService implements
         builder.setSmallIcon(R.drawable.ic_notifications_black_24dp);
 		builder.setStyle(new NotificationCompat.BigTextStyle().bigText(text));
 		builder.setContentIntent(PendingIntent.getActivity(this, 0, new Intent(this, MainActivity.class), 0));
+		builder.setOnlyAlertOnce(true);
         NotificationManagerCompat manager = NotificationManagerCompat.from(this);
         manager.notify(0, builder.build());
     }
