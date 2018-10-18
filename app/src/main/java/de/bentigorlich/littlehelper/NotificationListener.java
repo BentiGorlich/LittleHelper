@@ -11,6 +11,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.media.AudioAttributes;
+import android.media.AudioFocusRequest;
 import android.media.AudioManager;
 import android.net.NetworkInfo;
 import android.net.wifi.WifiInfo;
@@ -27,6 +28,8 @@ import android.support.v4.app.NotificationManagerCompat;
 import android.util.Log;
 
 import com.vdurmont.emoji.EmojiParser;
+
+import junit.runner.Version;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -409,16 +412,28 @@ public class NotificationListener extends NotificationListenerService implements
 		}
 	}
 
-    @TargetApi(Build.VERSION_CODES.N)
     private void requestAudioFocus() {
         Log.i(TAG, "Requested Audio Focus");
         AudioManager am = (AudioManager) this.getApplicationContext().getSystemService(Context.AUDIO_SERVICE);
-        if (am != null) {
-            am.requestAudioFocus(acl, AudioAttributes.CONTENT_TYPE_SPEECH, AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK);
-        }
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+			if (am != null) {
+				AudioAttributes.Builder attributes = new AudioAttributes.Builder();
+				attributes.setContentType(AudioAttributes.CONTENT_TYPE_SPEECH);
+				attributes.setUsage(AudioAttributes.USAGE_ASSISTANT);
+
+				AudioFocusRequest.Builder builder = new AudioFocusRequest.Builder(AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK);
+				builder.setAudioAttributes(attributes.build());
+				builder.setOnAudioFocusChangeListener(acl);
+
+				am.requestAudioFocus(builder.build());
+			}
+		} else {
+			if (am != null) {
+				am.requestAudioFocus(acl, AudioAttributes.CONTENT_TYPE_SPEECH, AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK);
+			}
+		}
     }
 
-    @TargetApi(Build.VERSION_CODES.N)
     private void abandonAudioFocus() {
         Log.i(TAG, "abandoned audio focus");
         AudioManager am = (AudioManager) this.getApplicationContext().getSystemService(Context.AUDIO_SERVICE);
