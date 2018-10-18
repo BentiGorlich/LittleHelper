@@ -1,40 +1,29 @@
 package de.bentigorlich.littlehelper;
 
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.graphics.Color;
 import android.os.Bundle;
-import android.preference.EditTextPreference;
 import android.provider.Settings;
-import android.support.constraint.ConstraintLayout;
 import android.support.design.widget.TabLayout;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
-import android.text.Editable;
 import android.util.Log;
 import android.view.ContextMenu;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.Button;
-import android.widget.EditText;
 import android.widget.LinearLayout;
-import android.widget.ScrollView;
 import android.widget.TextView;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.regex.Matcher;
 
 import static android.content.ContentValues.TAG;
-import static android.view.Gravity.FILL;
-
 public class MainActivity extends AppCompatActivity {
 
 	private TabLayout logtabs;
@@ -100,10 +89,23 @@ public class MainActivity extends AppCompatActivity {
 				if (tab.getText().toString().equals(appName)) {
 					LinearLayout logView = (LinearLayout) findViewById(R.id.logView);
 					logView.removeAllViews();
-					BufferedReader bfr = new BufferedReader(new FileReader(new File(getFilesDir(), fileName)));
+					File currFile = new File(getFilesDir(), fileName);
+					BufferedReader bfr = new BufferedReader(new FileReader(currFile));
 					String line;
+
+					ArrayList<String> lines = new ArrayList<>();
 					while ((line = bfr.readLine()) != null) {
-						String[] args = line.split(":");
+						lines.add(line);
+					}
+					bfr.close();
+
+					int i = 0;
+					if (lines.size() > 100) {
+						i = lines.size() - 100;
+					}
+					while (i < lines.size()) {
+						String currLine = lines.get(i);
+						String[] args = currLine.split(":");
 						if (args.length == 4) {
 							TextView curr = new TextView(getApplicationContext());
 							Calendar posted = Calendar.getInstance();
@@ -119,7 +121,7 @@ public class MainActivity extends AppCompatActivity {
 							logView.addView(curr, 0);
 						}
 					}
-					bfr.close();
+
 				}
 			} catch (PackageManager.NameNotFoundException ignored) {
 			} catch (IOException e) {

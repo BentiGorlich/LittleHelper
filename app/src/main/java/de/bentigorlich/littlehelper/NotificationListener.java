@@ -33,6 +33,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.HashMap;
 import java.util.Locale;
 import java.util.Set;
 
@@ -75,7 +76,7 @@ public class NotificationListener extends NotificationListenerService implements
     private PowerManager.WakeLock wake;
 
     //all the last notifications
-    private ArrayList<StatusBarNotification> notifications = new ArrayList<>();
+	private HashMap<String, Integer[]> oldNotifications = new HashMap<>();
 
     private TextToSpeech tts;
     private AudioChangeListener acl = new AudioChangeListener();
@@ -279,30 +280,39 @@ public class NotificationListener extends NotificationListenerService implements
     }
 
     private void saveLastNotification(StatusBarNotification note) {
-        String app = note.getPackageName();
-        StatusBarNotification oldNote = null;
-        for (StatusBarNotification sbn : notifications) {
-            if (app.equals(sbn.getPackageName())) {
-                oldNote = sbn;
-                break;
-            }
-        }
-        notifications.remove(oldNote);
-        notifications.add(note);
+		int id = note.getId();
+		String appname = note.getPackageName();
+
+		//if no set for app add one
+		if (!oldNotifications.containsKey(appname)) {
+			oldNotifications.put(appname, new Integer[100]);
+		}
+		int lowestIntIndex = 0;
+		int lowestInt = 0;
+		int currIndex = 0;
+		Integer[] currSet = oldNotifications.get(appname);
+		for (int oldID : currSet) {
+			if (oldID < lowestInt) {
+				lowestIntIndex = currIndex;
+			}
+			currIndex++;
+		}
+		//replace lowest id in Array with the new ID
+		currSet[lowestIntIndex] = id;
     }
 
     private boolean checkReplicate(StatusBarNotification note) {
-        for (StatusBarNotification sbn : notifications) {
-            String oldTitle = sbn.getNotification().extras.getCharSequence(Notification.EXTRA_TITLE).toString();
-            String oldText = sbn.getNotification().extras.getCharSequence(Notification.EXTRA_TEXT).toString();
-            String newTitle = note.getNotification().extras.getCharSequence(Notification.EXTRA_TITLE).toString();
-            String newText = note.getNotification().extras.getCharSequence(Notification.EXTRA_TEXT).toString();
-            if (oldTitle.equals(newTitle) && oldText.equals(newText)) {
-                Log.i(TAG, "Notification is a replica");
-                return true;
-            }
-        }
-        Log.i(TAG, "Notification isn't a replica");
+		int id = note.getId();
+		String appname = note.getPackageName();
+
+		Integer[] currSet = oldNotifications.get(appname);
+		for (int oldID : currSet) {
+			//check if id is a replica
+			if (oldID == id) {
+				return true;
+			}
+		}
+
         return false;
     }
 
@@ -368,7 +378,7 @@ public class NotificationListener extends NotificationListenerService implements
 				requestAudioFocus();
 				PowerManager powerManager = (PowerManager) getSystemService(POWER_SERVICE);
 				if (powerManager != null) {
-					wake = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "ReadingNotificationOut");
+					wake = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "littlehelper:ReadingNotificationOut");
 					if (wake != null) {
 						wake.acquire();
 					}
