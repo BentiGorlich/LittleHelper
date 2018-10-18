@@ -34,10 +34,10 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+		Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 		Log.i("toolbar", "started");
-		logtabs = (TabLayout) findViewById(R.id.logTabs);
+		logtabs = findViewById(R.id.logTabs);
 
 		logtabs.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
 			@Override
@@ -87,7 +87,7 @@ public class MainActivity extends AppCompatActivity {
 			try {
 				String appName = (String) packageManager.getApplicationLabel(packageManager.getApplicationInfo(packageName, PackageManager.GET_META_DATA));
 				if (tab.getText().toString().equals(appName)) {
-					LinearLayout logView = (LinearLayout) findViewById(R.id.logView);
+					LinearLayout logView = findViewById(R.id.logView);
 					logView.removeAllViews();
 					File currFile = new File(getFilesDir(), fileName);
 					BufferedReader bfr = new BufferedReader(new FileReader(currFile));
@@ -149,7 +149,7 @@ public class MainActivity extends AppCompatActivity {
 		if (logtabs.getTabCount() == 0) {
 			TextView nologs = new TextView(this);
 			nologs.setText(R.string.nologs_warning);
-			LinearLayout logView = (LinearLayout) findViewById(R.id.logView);
+			LinearLayout logView = findViewById(R.id.logView);
 			logView.removeAllViews();
 			logView.addView(nologs);
 		} else {

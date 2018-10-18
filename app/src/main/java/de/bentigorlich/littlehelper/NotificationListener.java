@@ -1,6 +1,5 @@
 package de.bentigorlich.littlehelper;
 
-import android.annotation.TargetApi;
 import android.app.Notification;
 import android.app.PendingIntent;
 import android.bluetooth.BluetoothAdapter;
@@ -29,12 +28,12 @@ import android.util.Log;
 
 import com.vdurmont.emoji.EmojiParser;
 
-import junit.runner.Version;
-
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.ArrayList;
+import java.io.UnsupportedEncodingException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Locale;
@@ -405,7 +404,7 @@ public class NotificationListener extends NotificationListenerService implements
 			Log.d(TAG, "valid: " + valid);
 			if (valid) {
 				Log.i(TAG, "new Notification: " + toRead);
-				tts.speak(toRead, TextToSpeech.QUEUE_ADD, null);
+				tts.speak(toRead, TextToSpeech.QUEUE_ADD, null, hash256(toRead));
 			}
 		} else {
 			Log.d(TAG, "blacklisted");
@@ -459,7 +458,7 @@ public class NotificationListener extends NotificationListenerService implements
         START_INTENT.setAction(START_INTENT_ACTION);
         START_PENDING_INTENT = PendingIntent.getBroadcast(getApplicationContext(), (int) System.currentTimeMillis(), START_INTENT, 0);
 
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(this);
+		NotificationCompat.Builder builder = new NotificationCompat.Builder(this, "All");
         String text = "";
         String title;
         if (checkForRunningConditions()) {
@@ -514,6 +513,19 @@ public class NotificationListener extends NotificationListenerService implements
         NotificationManagerCompat manager = NotificationManagerCompat.from(this);
         manager.cancel(0);
     }
+
+	private String hash256(String toHash) {
+		try {
+			MessageDigest md = MessageDigest.getInstance("SHA-256");
+
+			md.update(toHash.getBytes("UTF-8")); // Change this to "UTF-16" if needed
+			byte[] digest = md.digest();
+
+			return String.format("%064x", new java.math.BigInteger(1, digest));
+		} catch (NoSuchAlgorithmException | UnsupportedEncodingException e) {
+			return "";
+		}
+	}
 
     private class HeadsetPlugReceiver extends BroadcastReceiver {
 

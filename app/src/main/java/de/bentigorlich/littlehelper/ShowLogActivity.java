@@ -27,7 +27,7 @@ public class ShowLogActivity extends AppCompatActivity {
 				onBackPressed();
 			}
 		}
-		log = (EditText) findViewById(R.id.logView);
+		log = findViewById(R.id.logView);
 
 		File logfile = new File(this.getFilesDir(), packageName + ".log");
 		try {

@@ -26,23 +26,17 @@ import android.support.annotation.NonNull;
 import android.support.v7.app.ActionBar;
 import android.preference.PreferenceFragment;
 import android.preference.PreferenceManager;
-import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.RelativeLayout;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
-import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Set;
-
-import static android.content.ContentValues.TAG;
 
 /**
  * A {@link PreferenceActivity} that presents a set of application settings. On
@@ -540,14 +534,14 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
 
 	//show
 	public void showLoadingAnimation() {
-		RelativeLayout pageLoading = (RelativeLayout) findViewById(R.id.main_layoutPageLoading);
+		RelativeLayout pageLoading = findViewById(R.id.main_layoutPageLoading);
 		pageLoading.setVisibility(View.VISIBLE);
 	}
 
 
 	//hide
 	public void hideLoadingAnimation() {
-		RelativeLayout pageLoading = (RelativeLayout) findViewById(R.id.main_layoutPageLoading);
+		RelativeLayout pageLoading = findViewById(R.id.main_layoutPageLoading);
 		pageLoading.setVisibility(View.GONE);
 	}
 }
