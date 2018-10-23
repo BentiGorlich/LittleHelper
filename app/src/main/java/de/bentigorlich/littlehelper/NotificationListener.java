@@ -208,7 +208,7 @@ public class NotificationListener extends NotificationListenerService implements
     @Override
     public void onNotificationPosted(StatusBarNotification note) {
         try {
-			Log.d(TAG, "checking " + note.getPackageName());
+			Log.d(TAG, "checking " + note.getPackageName() + " id: " + note.getId());
 			boolean isActivatedForPackage = checkPreferences(note.getPackageName());
 			SharedPreferences shp = PreferenceManager.getDefaultSharedPreferences(this);
 			if (shp.getBoolean("key_log", true)) {
@@ -224,7 +224,8 @@ public class NotificationListener extends NotificationListenerService implements
                 readNotification(note);
                 updateNotifications();
             }
-        } catch (NullPointerException ignored) {
+		} catch (NullPointerException e) {
+			e.printStackTrace();
         }
     }
 
@@ -241,7 +242,7 @@ public class NotificationListener extends NotificationListenerService implements
 			}
 			String title = note.getNotification().extras.getCharSequence(Notification.EXTRA_TITLE).toString();
 			String text = note.getNotification().extras.getCharSequence(Notification.EXTRA_TEXT).toString();
-			String toWrite = title.replaceAll(":", "") + ":" + text.replaceAll(":", "");
+			String toWrite = title.replaceAll(":", "") + "(id:" + note.getId() + "):" + text.replaceAll(":", "");
 			String blacklisted = "";
 			if (checkForBlacklistedWordsInText(note.getPackageName(), title + text) || checkForBlacklistedWordsInTitle(note.getPackageName(), title + text)) {
 				blacklisted += "blacklisted";
@@ -293,9 +294,15 @@ public class NotificationListener extends NotificationListenerService implements
 		int lowestInt = 0;
 		int currIndex = 0;
 		Integer[] currSet = oldNotifications.get(appname);
-		for (int oldID : currSet) {
-			if (oldID < lowestInt) {
-				lowestIntIndex = currIndex;
+		if (currSet == null) {
+			currSet = new Integer[100];
+			oldNotifications.put(appname, currSet);
+		}
+		for (Integer oldID : currSet) {
+			if (oldID != null) {
+				if (oldID < lowestInt) {
+					lowestIntIndex = currIndex;
+				}
 			}
 			currIndex++;
 		}
@@ -308,13 +315,20 @@ public class NotificationListener extends NotificationListenerService implements
 		String appname = note.getPackageName();
 
 		Integer[] currSet = oldNotifications.get(appname);
-		for (int oldID : currSet) {
+		if (currSet == null) {
+			currSet = new Integer[100];
+			oldNotifications.put(appname, currSet);
+		}
+		for (Integer oldID : currSet) {
 			//check if id is a replica
-			if (oldID == id) {
-				return true;
+			if (oldID != null) {
+				if (oldID == id) {
+					Log.d(TAG, "is replica!");
+					return true;
+				}
 			}
 		}
-
+		Log.d(TAG, "Not a replica!");
         return false;
     }
 
@@ -448,8 +462,6 @@ public class NotificationListener extends NotificationListenerService implements
     }
 
     private void updateNotifications() {
-        Log.i(TAG, "notifications got updated");
-
         STOP_INTENT = new Intent(STOP_INTENT_ACTION);
         STOP_INTENT.setAction(STOP_INTENT_ACTION);
         STOP_PENDING_INTENT = PendingIntent.getBroadcast(getApplicationContext(), (int) System.currentTimeMillis(), STOP_INTENT, 0);
@@ -459,6 +471,7 @@ public class NotificationListener extends NotificationListenerService implements
         START_PENDING_INTENT = PendingIntent.getBroadcast(getApplicationContext(), (int) System.currentTimeMillis(), START_INTENT, 0);
 
 		NotificationCompat.Builder builder = new NotificationCompat.Builder(this, getString(R.string.channel_id));
+
         String text = "";
         String title;
         if (checkForRunningConditions()) {
@@ -498,16 +511,17 @@ public class NotificationListener extends NotificationListenerService implements
         }
         builder.setContentTitle(title);
 		builder.setContentText(text);
-		builder.setOngoing(checkForRunningConditions() || !isRunning || isManuallyStarted);
+		builder.setOngoing(true);
         builder.setCategory("Information");
         builder.setAutoCancel(false);
-        builder.setPriority(NotificationCompat.PRIORITY_DEFAULT);
+		builder.setPriority(NotificationCompat.PRIORITY_MIN);
         builder.setSmallIcon(R.drawable.ic_notifications_black_24dp);
 		builder.setStyle(new NotificationCompat.BigTextStyle().bigText(text));
 		builder.setContentIntent(PendingIntent.getActivity(this, 0, new Intent(this, MainActivity.class), 0));
 		builder.setOnlyAlertOnce(true);
         NotificationManagerCompat manager = NotificationManagerCompat.from(this);
         manager.notify(0, builder.build());
+		Log.i(TAG, "notifications got updated");
     }
 
     private void removeNotification() {
@@ -698,10 +712,9 @@ public class NotificationListener extends NotificationListenerService implements
 			if (intent.getAction().equals(NETWORK_STATE_CHANGED_ACTION)) {
 				NetworkInfo netInfo = intent.getParcelableExtra(EXTRA_NETWORK_INFO);
 				if (netInfo.getType() == TYPE_WIFI) {
-					if (netInfo.isConnectedOrConnecting()) {
+					if (netInfo.isConnected()) {
 						SharedPreferences shp = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
-						WifiInfo wifiInfo = getApplicationContext().getSystemService(WifiManager.class).getConnectionInfo();
-						String ssid = wifiInfo.getSSID();
+						String ssid = netInfo.getExtraInfo();
 						Set<String> wifi_devices = shp.getStringSet("key_wifi_devices", null);
 						Log.d("WiFiChangeListener", "wifi is connected to " + ssid);
 						if (wifi_devices != null) {
